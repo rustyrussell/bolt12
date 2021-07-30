@@ -1,0 +1,26 @@
+{
+  "name": "bolt12",
+  "version": "1.0.0",
+  "description": "JS implementation of bolt12",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "bolt12",
+    "lightning-network",
+    "javascript",
+    "npm",
+    "package"
+  ],
+  "author": "Aditya",
+  "license": "ISC",
+  "dependencies": {
+    "js-sha256": "^6.14.5"
+  } 
+}
