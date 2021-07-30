@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 import pyln.proto.message
+from pyln.proto.message.fundamental_types import FundamentalHexType, IntegerType
 import argparse
 
 
@@ -17,17 +18,13 @@ def generate_towire_field(field, allfields):
         print('    assert.equal(value[_n].length == {fixedlen}'
               .format(fixedlen=subf.fieldtype.arraysize))
 
-    # FIXME: pyln.proto.message should expose ArrayType, which is the
-    # common parent!
-    if (isinstance(field.fieldtype, pyln.proto.message.EllipsisArrayType)
-        or isinstance(field.fieldtype, pyln.proto.message.SizedArrayType)
-        or isinstance(field.fieldtype, pyln.proto.message.DynamicArrayType)):
+    if isinstance(field.fieldtype, pyln.proto.message.array_types.ArrayType):
         print('    for (let v in value[_n]) {{\n'
               '        buf = Buffer.concat([buf, towire_{ftype}(v)]);\n'
               '    }}'
               .format(ftype=field.fieldtype.elemtype.name))
-    # FIXME: pyln.proto.message should expose LengthFieldType
-    elif hasattr(field.fieldtype, 'len_for'):
+    elif isinstance(field.fieldtype,
+                    pyln.proto.message.array_types.LengthFieldType):
         # We don't have a value for this, we intuit it from the things its
         # a length for!
         # FIXME: Make sure that all fields which use this length are the same!
@@ -62,8 +59,8 @@ def generate_fromwire_field(field, allfields):
               '    value.push(v);'
               .format(ftype=field.fieldtype.elemtype.name,
                       limit=limitstr))
-    # FIXME: pyln.proto.message should expose LengthFieldType
-    elif hasattr(field.fieldtype, 'len_for'):
+    elif isinstance(field.fieldtype,
+                    pyln.proto.message.array_types.LengthFieldType):
         # We don't store lengths in the returned values, we just
         # keep local vars so we can use them we we read the actual
         # field
@@ -124,11 +121,11 @@ ns = pyln.proto.message.MessageNamespace()
 
 # Old version of pyln.proto are missing modern fundamental types.
 if not 'utf8' in ns.fundamentaltypes:
-    ns.fundamentaltypes['utf8'] = ns.fundamentaltypes['byte']
+    ns.fundamentaltypes['utf8'] = IntegerType('utf8', 1, 'B')
 if not 'pubkey32' in ns.fundamentaltypes:
-    ns.fundamentaltypes['pubkey32'] = ns.fundamentaltypes['sha256']
+    ns.fundamentaltypes['pubkey32'] = FundamentalHexType('pubkey32', 32)
 if not 'bip340sig' in ns.fundamentaltypes:
-    ns.fundamentaltypes['bip340sig'] = ns.fundamentaltypes['signature']
+    ns.fundamentaltypes['bip340sig'] = FundamentalHexType('bip340sig', 32)
 
 ns.load_csv(csv_lines)
 
