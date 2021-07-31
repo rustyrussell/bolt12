@@ -24,20 +24,23 @@
 // }
 function towire_tu64(value)
 {
-    var res=Buffer.alloc(8)
-    res.fill(0)
-    res.writeUInt32BE(value >> 8, 0); //write the high order bits (shifted over)
-    res.writeUInt32BE(value & 0x00ff, 4); //write the low order bits
-    return res
+    const hex=value.toString(16)
+    const buff=Buffer.from(hex.padStart(16, '0').slice(0, 16), 'hex')
+    let waste_bytes=0;
+    for(let i=0;i<buff.length;i++){
+        if(buff[i]===0)waste_bytes++;
+        else break;
+    }
+    return buff.slice(waste_bytes)
 }
-
 function fromwire_tu64(buffer)
 {
-    var bufInt = (buffer.readUInt32BE(0) << 8) + buffer.readUInt32BE(4);
+    const untrimmedBuffer = Buffer.alloc(8, 0);
+    buffer.copy(untrimmedBuffer, untrimmedBuffer.length - buffer.length);
+    var bufInt = (untrimmedBuffer.readUInt32BE(0) << 8) + untrimmedBuffer.readUInt32BE(4);
     console.log(bufInt);
 }
-
-console.log(towire_tu64(55))
+// console.log(fromwire_tu64( towire_tu64(100000000)))
 // function towire_n1_tlv3(value): Buffer
 // {
 //     _n = 0
