@@ -15,11 +15,14 @@
 //    1. type: 254 (`tlv4`)
 //    2. data:
 //      * [`u16`:`cltv_delta`]
-
 function towire_tu64(value)
 {
-    const hex=value.toString(16)
-    const buff=Buffer.from(hex.padStart(16, '0').slice(0, 16), 'hex')
+    const big_i=BigInt(value.toString())
+    let buff=big_i.toString(16)
+    if(buff.length>16)
+        throw Error('Out of Bounds!');
+    buff=buff.padStart(16, '0')
+    buff=Buffer.from(buff, 'hex')
     let waste_bytes=0;
     for(let i=0;i<buff.length;i++){
         if(buff[i]===0)waste_bytes++;
@@ -27,15 +30,15 @@ function towire_tu64(value)
     }
     return buff.slice(waste_bytes)
 }
-
 function fromwire_tu64(buffer)
 {
-    const untrimmedBuffer = Buffer.alloc(8, 0);
-    buffer.copy(untrimmedBuffer, untrimmedBuffer.length - buffer.length);
-    var bufInt = (untrimmedBuffer.readUInt32BE(0) << 8) + untrimmedBuffer.readUInt32BE(4);
-    return bufInt;
+    if(buffer.length>8)
+        throw ('Out of Bounds!')
+    return BigInt("0x"+buffer.toString('hex'));
 }
-// console.log(fromwire_tu64(towire_tu64(1000000000))) 
+// console.log(s)
+// console.log(BigInt("0xffffffffffffffff")) 
+console.log(fromwire_tu64(towire_tu64("18446744073709551615"))) 
 function towire_short_channel_id(value)
 {
     let fields=value.split('x');
@@ -81,9 +84,15 @@ function towire_u16(value){
 function fromwire_u16(buffer){
     return parseInt(buffer.toString('hex'),16)
 }
+function towire_n1_tlv3(value){
+
+}
+function fromwire_n1_tlv3(buffer){
+
+}
 const tlvs_n1 = {
     1: [ "tlv1", towire_tu64, fromwire_tu64 ],
     2: [ "tlv2", towire_short_channel_id, fromwire_short_channel_id ],
-    // 3: [ "tlv3", towire_n1_tlv3, fromwire_n1_tlv3 ],
+    3: [ "tlv3", towire_n1_tlv3, fromwire_n1_tlv3 ],
     254: [ "tlv4", towire_u16, fromwire_u16 ]
 }
