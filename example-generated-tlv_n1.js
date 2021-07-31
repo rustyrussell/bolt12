@@ -33,11 +33,11 @@ function towire_tu64(value)
 
 function fromwire_tu64(buffer)
 {
-    var bufInt = (buf.readUInt32BE(0) << 8) + buf.readUInt32BE(4);
+    var bufInt = (buffer.readUInt32BE(0) << 8) + buffer.readUInt32BE(4);
     console.log(bufInt);
 }
 
-console.log(towire_tu64(1000000000))
+console.log(towire_tu64(55))
 // function towire_n1_tlv3(value): Buffer
 // {
 //     _n = 0
