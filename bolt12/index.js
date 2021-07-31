@@ -167,7 +167,12 @@ function wordsToIntBE (words) {
     }, 0)
 }
 function decodeTu(words){
-    return parseInt(Buffer.from(words).toString('hex'),16)
+    tar=Buffer.from(words);
+    const untrimmedBuffer=Buffer.alloc(8,0);
+    tar.copy(untrimmedBuffer,untrimmedBuffer.length-tar.length)
+    var res =(untrimmedBuffer.readUInt32BE(0) << 8) + untrimmedBuffer.readUInt32BE(4)
+    return res
+    // return parseInt(Buffer.from(words).toString('hex'),16)
 }
 function decodeU64(words){
     words=words.slice(0,8)

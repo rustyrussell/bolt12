@@ -38,9 +38,9 @@ function fromwire_tu64(buffer)
     const untrimmedBuffer = Buffer.alloc(8, 0);
     buffer.copy(untrimmedBuffer, untrimmedBuffer.length - buffer.length);
     var bufInt = (untrimmedBuffer.readUInt32BE(0) << 8) + untrimmedBuffer.readUInt32BE(4);
-    console.log(bufInt);
+    return bufInt;
 }
-// console.log(fromwire_tu64( towire_tu64(100000000)))
+console.log(fromwire_tu64( towire_tu64()))
 // function towire_n1_tlv3(value): Buffer
 // {
 //     _n = 0
