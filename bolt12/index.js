@@ -169,7 +169,7 @@ function wordsToIntBE (words) {
 //decodeTu needs revision!
 function decodeTu(words){
     tar=Buffer.from(words,'hex');
-    return BigInt("0x"+tar.toString('hex'));
+    return (''+BigInt("0x"+tar.toString('hex')));
 }
 
 function decodeU64(words){

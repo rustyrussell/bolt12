@@ -34,11 +34,13 @@ function fromwire_tu64(buffer)
 {
     if(buffer.length>8)
         throw ('Out of Bounds!')
-    return BigInt("0x"+buffer.toString('hex'));
+    return (BigInt(''+"0x"+buffer.toString('hex')));
 }
 // console.log(s)
 // console.log(BigInt("0xffffffffffffffff")) 
-console.log(fromwire_tu64(towire_tu64("18446744073709551615"))) 
+// console.log(fromwire_tu64(towire_tu64("18446744073709551615"))) 
+// console.log(towire_tu64("18446744073709551615")) 
+
 function towire_short_channel_id(value)
 {
     let fields=value.split('x');
@@ -55,7 +57,8 @@ function fromwire_short_channel_id(buffer)
     let buf_output_index=buffer.slice(6);
     return parseInt(buf_block_height.toString('hex'),16).toString()+'x'+parseInt(buf_txn_index.toString('hex'),16).toString()+'x'+parseInt(buf_output_index.toString('hex'),16).toString()
 }
-// console.log(fromwire_short_channel_id(towire_short_channel_id("539268x845x1")))
+// console.log((towire_short_channel_id("1x2x3")))
+
 // function towire_n1_tlv3(value)
 // {
 //     _n = 0
@@ -75,15 +78,21 @@ function fromwire_short_channel_id(buffer)
 //     value.push(fromwire_u64(buffer))
 //     value.push(fromwire_u64(buffer))
 // }
+
 function towire_u16(value){
     const hex=value.toString(16).padStart(4,0)
+    if(hex.length>4)
+        throw Error("Out of Bounds!")
     const buff=Buffer.from(hex,'hex')
     return buff
 }
-// console.log(towire_u16(10000))
+// console.log(towire_u16(65536))
 function fromwire_u16(buffer){
+    if(buffer.length!=2)
+        throw Error("Not proper U16(2 byte) hex.")
     return parseInt(buffer.toString('hex'),16)
 }
+// console.log(fromwire_u16(Buffer.from("ffff",'hex')))
 function towire_n1_tlv3(value){
 
 }
