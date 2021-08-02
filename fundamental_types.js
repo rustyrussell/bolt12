@@ -10,7 +10,7 @@ class TruncatedIntType{
             throw Error("Not a Buffer")
         }
         if(buffer.length>this.bytelen)
-        throw Error("Out of Bounds!")
+            throw Error("Out of Bounds!")
         return (''+BigInt("0x"+buffer.toString('hex')));
     }
     write()
