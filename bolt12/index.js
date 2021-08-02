@@ -166,9 +166,12 @@ function wordsToIntBE (words) {
       return total + item * Math.pow(64, index)
     }, 0)
 }
+//decodeTu needs revision!
 function decodeTu(words){
-    return parseInt(Buffer.from(words).toString('hex'),16)
+    tar=Buffer.from(words,'hex');
+    return (''+BigInt("0x"+tar.toString('hex')));
 }
+
 function decodeU64(words){
     words=words.slice(0,8)
     res = decodeTu(words)
