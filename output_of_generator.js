@@ -255,7 +255,9 @@ function fromwire_offer_recurrence(buffer)
 function towire_offer_recurrence_paywindow(value)
 {    let _n = 0;
     let buf = Buffer;
-    buf = Buffer.concat([buf, towire_u32(value[_n++])]);    buf = Buffer.concat([buf, towire_byte(value[_n++])]);    buf = Buffer.concat([buf, towire_tu32(value[_n++])]);
+    buf = Buffer.concat([buf, towire_u32(value[_n++])]);
+    buf = Buffer.concat([buf, towire_byte(value[_n++])]);
+    buf = Buffer.concat([buf, towire_tu32(value[_n++])]);
     assert(value.length() == _n);
     return buf;
 }
