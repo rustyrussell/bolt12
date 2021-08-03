@@ -16,7 +16,7 @@ def generate_towire_field(field, allfields):
     """Generate towire for a field, given it may be a complex type"""
     if isinstance(field.fieldtype, pyln.proto.message.SizedArrayType):
         print('    assert.equal(value[_n].length == {fixedlen}'
-              .format(fixedlen=subf.fieldtype.arraysize))
+              .format(fixedlen=field.fieldtype.arraysize))
 
     if isinstance(field.fieldtype, pyln.proto.message.array_types.ArrayType):
         print('    for (let v in value[_n]) {{\n'
@@ -41,10 +41,10 @@ def generate_fromwire_field(field, allfields):
     """Generate fromwire for a field, given it may be a complex type"""
     if isinstance(field.fieldtype, pyln.proto.message.SizedArrayType):
         is_array = True
-        limitstr = 'i < {}'.format(subf.fieldtype.arraysize)
+        limitstr = 'i < {}'.format(field.fieldtype.arraysize)
     elif isinstance(field.fieldtype, pyln.proto.message.DynamicArrayType):
         is_array = True
-        limitstr = 'i < lenfield_{}'.format(subf.fieldtype.lenfield.name)
+        limitstr = 'i < lenfield_{}'.format(field.fieldtype.lenfield.name)
     elif isinstance(field.fieldtype, pyln.proto.message.EllipsisArrayType):
         is_array = True
         limitstr = 'buffer.length != 0'
