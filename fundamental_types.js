@@ -118,6 +118,8 @@ fundamental_types={
         "point":(buf)=> FundamentalHexType(buf,33).read(),
         "short_channel_id":(buf)=> ShortChannelIDType(buf).read(),
         "signature":(buf)=> FundamentalHexType(buf,64).read(),
+        "description":(buf)=> buf.toString('utf8'),
+        "signature":(buf)=> buf.toString('hex')
         // "bigsize":   BigSizeType,
 }
 
