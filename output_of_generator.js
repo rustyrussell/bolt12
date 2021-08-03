@@ -9,6 +9,7 @@ function fromwire_tlv_payload_amt_to_forward(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_tlv_payload_outgoing_cltv_value(value)
@@ -22,6 +23,7 @@ function fromwire_tlv_payload_outgoing_cltv_value(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu32(buffer));
+
     return value;
 }
 function towire_tlv_payload_short_channel_id(value)
@@ -35,6 +37,7 @@ function fromwire_tlv_payload_short_channel_id(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_short_channel_id(buffer));
+
     return value;
 }
 function towire_tlv_payload_payment_data(value)
@@ -55,6 +58,7 @@ function fromwire_tlv_payload_payment_data(buffer)
         v.push(fromwire_byte(buffer));
     }
     value.push(v);    value.push(fromwire_tu64(buffer));
+
     return value;
 }
 const tlv_tlv_payload = {
@@ -112,6 +116,7 @@ function fromwire_offer_amount(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_offer_description(value)
@@ -163,6 +168,7 @@ function fromwire_offer_absolute_expiry(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_offer_paths(value)
@@ -214,6 +220,7 @@ function fromwire_offer_quantity_min(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_offer_quantity_max(value)
@@ -227,6 +234,7 @@ function fromwire_offer_quantity_max(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_offer_recurrence(value)
@@ -239,7 +247,9 @@ function towire_offer_recurrence(value)
 function fromwire_offer_recurrence(buffer)
 {    _n = 0;
     value = [];
-    value.push(fromwire_byte(buffer));    value.push(fromwire_tu32(buffer));
+    value.push(fromwire_byte(buffer));
+    value.push(fromwire_tu32(buffer));
+
     return value;
 }
 function towire_offer_recurrence_paywindow(value)
@@ -252,7 +262,10 @@ function towire_offer_recurrence_paywindow(value)
 function fromwire_offer_recurrence_paywindow(buffer)
 {    _n = 0;
     value = [];
-    value.push(fromwire_u32(buffer));    value.push(fromwire_byte(buffer));    value.push(fromwire_tu32(buffer));
+    value.push(fromwire_u32(buffer));
+    value.push(fromwire_byte(buffer));
+    value.push(fromwire_tu32(buffer));
+
     return value;
 }
 function towire_offer_recurrence_limit(value)
@@ -266,6 +279,7 @@ function fromwire_offer_recurrence_limit(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu32(buffer));
+
     return value;
 }
 function towire_offer_recurrence_base(value)
@@ -278,7 +292,9 @@ function towire_offer_recurrence_base(value)
 function fromwire_offer_recurrence_base(buffer)
 {    _n = 0;
     value = [];
-    value.push(fromwire_byte(buffer));    value.push(fromwire_tu64(buffer));
+    value.push(fromwire_byte(buffer));
+    value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_offer_node_id(value)
@@ -292,6 +308,7 @@ function fromwire_offer_node_id(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_offer_send_invoice(value)
@@ -318,6 +335,7 @@ function fromwire_offer_refund_for(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_offer_signature(value)
@@ -331,6 +349,7 @@ function fromwire_offer_signature(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_signature(buffer));
+
     return value;
 }
 const tlv_offer = {
@@ -383,6 +402,7 @@ function fromwire_invoice_request_offer_id(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_invoice_request_amount(value)
@@ -396,6 +416,7 @@ function fromwire_invoice_request_amount(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_invoice_request_features(value)
@@ -428,6 +449,7 @@ function fromwire_invoice_request_quantity(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_invoice_request_recurrence_counter(value)
@@ -441,6 +463,7 @@ function fromwire_invoice_request_recurrence_counter(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu32(buffer));
+
     return value;
 }
 function towire_invoice_request_recurrence_start(value)
@@ -454,6 +477,7 @@ function fromwire_invoice_request_recurrence_start(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu32(buffer));
+
     return value;
 }
 function towire_invoice_request_payer_key(value)
@@ -467,6 +491,7 @@ function fromwire_invoice_request_payer_key(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_invoice_request_payer_note(value)
@@ -518,6 +543,7 @@ function fromwire_invoice_request_replace_invoice(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_invoice_request_payer_signature(value)
@@ -531,6 +557,7 @@ function fromwire_invoice_request_payer_signature(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_signature(buffer));
+
     return value;
 }
 const tlv_invoice_request = {
@@ -577,6 +604,7 @@ function fromwire_invoice_offer_id(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_invoice_amount(value)
@@ -590,6 +618,7 @@ function fromwire_invoice_amount(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_invoice_description(value)
@@ -717,6 +746,7 @@ function fromwire_invoice_node_id(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_invoice_quantity(value)
@@ -730,6 +760,7 @@ function fromwire_invoice_quantity(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_invoice_refund_for(value)
@@ -743,6 +774,7 @@ function fromwire_invoice_refund_for(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_invoice_recurrence_counter(value)
@@ -756,6 +788,7 @@ function fromwire_invoice_recurrence_counter(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu32(buffer));
+
     return value;
 }
 function towire_invoice_send_invoice(value)
@@ -782,6 +815,7 @@ function fromwire_invoice_recurrence_start(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu32(buffer));
+
     return value;
 }
 function towire_invoice_recurrence_basetime(value)
@@ -795,6 +829,7 @@ function fromwire_invoice_recurrence_basetime(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_invoice_payer_key(value)
@@ -808,6 +843,7 @@ function fromwire_invoice_payer_key(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_invoice_payer_note(value)
@@ -859,6 +895,7 @@ function fromwire_invoice_created_at(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_invoice_payment_hash(value)
@@ -872,6 +909,7 @@ function fromwire_invoice_payment_hash(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_invoice_relative_expiry(value)
@@ -885,6 +923,7 @@ function fromwire_invoice_relative_expiry(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu32(buffer));
+
     return value;
 }
 function towire_invoice_cltv(value)
@@ -898,12 +937,14 @@ function fromwire_invoice_cltv(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu32(buffer));
+
     return value;
 }
 function towire_invoice_fallbacks(value)
 {    let _n = 0;
     let buf = Buffer;
-    buf = Buffer.concat([buf, towire_byte(value[1].length)]);    for (let v in value[_n]) {
+    buf = Buffer.concat([buf, towire_byte(value[1].length)]);
+    for (let v in value[_n]) {
         buf = Buffer.concat([buf, towire_fallback_address(v)]);
     }
     assert(value.length() == _n);
@@ -930,6 +971,7 @@ function fromwire_invoice_refund_signature(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_signature(buffer));
+
     return value;
 }
 function towire_invoice_replace_invoice(value)
@@ -943,6 +985,7 @@ function fromwire_invoice_replace_invoice(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_sha256(buffer));
+
     return value;
 }
 function towire_invoice_signature(value)
@@ -956,6 +999,7 @@ function fromwire_invoice_signature(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_signature(buffer));
+
     return value;
 }
 const tlv_invoice = {
@@ -998,6 +1042,7 @@ function fromwire_invoice_error_erroneous_field(buffer)
 {    _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
+
     return value;
 }
 function towire_invoice_error_suggested_value(value)

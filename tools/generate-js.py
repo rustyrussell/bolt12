@@ -3,7 +3,7 @@ import pyln.proto.message
 from pyln.proto.message.fundamental_types import FundamentalHexType, IntegerType
 import argparse
 
-
+# file = open('../output_of_generator.js', 'w')
 def field_index(allfields, name):
     """Since we use JavaScript arrays, but pyln.proto.msg uses names"""
     for i, f in enumerate(allfields):
@@ -29,7 +29,7 @@ def generate_towire_field(field, allfields):
         # a length for!
         # FIXME: Make sure that all fields which use this length are the same!
         findex = field_index(allfields, field.fieldtype.len_for[0].name)
-        print('    buf = Buffer.concat([buf, towire_{ftype}(value[{findex}].length)]);'
+        print('    buf = Buffer.concat([buf, towire_{ftype}(value[{findex}].length)]);\n'
               .format(ftype=field.fieldtype.underlying_type.name,
                       findex=findex))
     else:
@@ -68,7 +68,7 @@ def generate_fromwire_field(field, allfields):
               .format(fname=field.name,
                       ftype=field.fieldtype.underlying_type.name))
     else:
-        print('    value.push(fromwire_{ftype}(buffer));'
+        print('    value.push(fromwire_{ftype}(buffer));\n'
               .format(ftype=field.fieldtype.name))
 
 
