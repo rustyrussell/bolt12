@@ -114,7 +114,7 @@ def generate_subtype(name: str):
 # We need types from bolt 4.
 csv_lines = []
 for boltnum in (4, 12):
-    with open('specs/bolt{}.csv'.format(boltnum), 'r') as f:
+    with open('../specs/bolt{}.csv'.format(boltnum), 'r') as f:
         csv_lines += f.read().split()
 
 ns = pyln.proto.message.MessageNamespace()
