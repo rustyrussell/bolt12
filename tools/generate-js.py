@@ -15,7 +15,7 @@ def field_index(allfields, name):
 def generate_towire_field(field, allfields):
     """Generate towire for a field, given it may be a complex type"""
     if isinstance(field.fieldtype, pyln.proto.message.SizedArrayType):
-        print('    assert.equal(value[_n].length == {fixedlen}'
+        print('    assert.equal(value[_n].length == {fixedlen})\n'
               .format(fixedlen=field.fieldtype.arraysize))
 
     if isinstance(field.fieldtype, pyln.proto.message.array_types.ArrayType):
@@ -79,10 +79,10 @@ def generate_tlvtype(tlvtype: 'TlvMessageType'):
               '{{'
               .format(tlvname=tlvtype.name, fname=f.name))
         print('    let _n = 0;\n'
-              '    let buf = Buffer;')
+              '    let buf = Buffer;\n')
         for subf in f.fields:
             generate_towire_field(subf, f.fields)
-        print('    assert(value.length() == _n);\n'
+        print('\n    assert(value.length() == _n);\n'
               '    return buf;\n'
               '}\n')
 
@@ -90,18 +90,18 @@ def generate_tlvtype(tlvtype: 'TlvMessageType'):
               '{{'
               .format(tlvname=tlvtype.name, fname=f.name))
         print('    _n = 0;\n'
-              '    value = [];')
+              '    value = [];\n')
         for subf in f.fields:
             generate_fromwire_field(subf, f.fields)
-        print('    return value;\n'
+        print('\n    return value;\n'
               '}\n')
 
     # Now, generate table
-    print('const tlv_{} = {{'.format(tlvtype.name))
+    print('const tlv_{} = {{\n'.format(tlvtype.name))
     for f in tlvtype.fields:
-        print('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],'
+        print('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],\n'
               .format(num=f.number, tlvname=tlvtype.name, fname=f.name))
-    print('}')
+    print('}\n')
 
 
 def generate_msgtype(name: str):
