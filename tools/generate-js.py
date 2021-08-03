@@ -33,7 +33,7 @@ def generate_towire_field(field, allfields):
               .format(ftype=field.fieldtype.underlying_type.name,
                       findex=findex))
     else:
-        print('    buf = Buffer.concat([buf, towire_{ftype}(value[_n++])]);'
+        print('    buf = Buffer.concat([buf, towire_{ftype}(value[_n++])]);\n'
               .format(ftype=field.fieldtype.name))
 
 
