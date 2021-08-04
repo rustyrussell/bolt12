@@ -99,17 +99,66 @@ def generate_tlvtype(tlvtype: 'TlvMessageType'):
     # Now, generate table
     print('const tlv_{} = {{\n'.format(tlvtype.name))
     for f in tlvtype.fields:
-        print('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],\n'
+        print('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],'
               .format(num=f.number, tlvname=tlvtype.name, fname=f.name))
     print('}\n')
 
 
 def generate_msgtype(name: str):
-    raise RuntimeError("FIXME: Implement!")
-
+    print('function towire_{tlvname}(value)\n'
+              '{{'
+              .format(tlvname=name.name))
+    print('    let _n = 0;\n'
+          '    let buf = Buffer;')
+    for f in name.fields:
+        generate_towire_field(f, name.fields)
+    print('    assert(value.length() == _n);\n'
+          '    return buf;\n'
+          '}')
+    print('function fromwire_{tlvname}(buffer)\n'
+              '{{'
+              .format(tlvname=name.name))
+    print('    _n = 0;\n'
+          '    value = [];')
+    for f in name.fields:
+        generate_fromwire_field(f, name.fields)
+    print('\n    return value;\n'
+          '}\n')
+    # Now, generate table
+    print('const tlv_{} = {{\n'.format(name.name))
+    for f in name.fields:
+        print('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],'
+              .format(num=name.number, tlvname=name.name, fname=f.name))
+    print('}\n')
+    # print(dir(name.fields.__getattribute__))
 
 def generate_subtype(name: str):
-    raise RuntimeError("FIXME: Implement!")
+    print('function towire_{tlvname}(value)\n'
+              '{{'
+              .format(tlvname=name.name))
+    print('    let _n = 0;\n'
+          '    let buf = Buffer;')
+    for f in name.fields:
+        generate_towire_field(f, name.fields)
+    print('    assert(value.length() == _n);\n'
+          '    return buf;\n'
+          '}')
+    print('function fromwire_{tlvname}(buffer)\n'
+              '{{'
+              .format(tlvname=name.name))
+    print('    _n = 0;\n'
+          '    value = [];')
+    for f in name.fields:
+        generate_fromwire_field(f, name.fields)
+    print('\n    return value;\n'
+          '}\n')
+    # print(name.__dict__)
+    # Now, generate table
+    # print('const tlv_{} = {{\n'.format(name.name))
+    # for f in name.fields:
+    #     print('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],'
+    #           .format(num=name.number, tlvname=name.name, fname=f.name))
+    # print('}\n')
 
 # We need types from bolt 4.
 csv_lines = []
@@ -141,21 +190,21 @@ if args.types == []:
     args.types = list(ns.tlvtypes.keys()) + list(ns.subtypes.keys()) + list(ns.messagetypes.keys())
 
 for typename in args.types:
-    tlvtype = ns.get_tlvtype(typename)
-    if tlvtype:
-        generate_tlvtype(tlvtype)
-        continue
+    # tlvtype = ns.get_tlvtype(typename)
+    # if tlvtype:
+    #     generate_tlvtype(tlvtype)
+    #     continue
 
-    msgtype = ns.get_msgtype(typename)
-    if msgtype:
-        generate_msgtype(msgtype)
-        continue
+    # msgtype = ns.get_msgtype(typename)
+    # if msgtype:
+    #     generate_msgtype(msgtype)
+    #     continue
 
     subtype = ns.get_subtype(typename)
     if subtype:
         generate_subtype(subtype)
         continue
 
-    raise ValueError("Unknown type {}".format(typename))
+    # raise ValueError("Unknown type {}".format(typename))
     
         

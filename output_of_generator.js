@@ -287,7 +287,8 @@ function fromwire_offer_recurrence_limit(buffer)
 function towire_offer_recurrence_base(value)
 {    let _n = 0;
     let buf = Buffer;
-    buf = Buffer.concat([buf, towire_byte(value[_n++])]);    buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
+    buf = Buffer.concat([buf, towire_byte(value[_n++])]);
+    buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length() == _n);
     return buf;
 }
