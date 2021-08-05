@@ -3,7 +3,7 @@ import pyln.proto.message
 from pyln.proto.message.fundamental_types import FundamentalHexType, IntegerType
 import argparse
 
-# file = open('../output_of_generator.js', 'w')
+file = open('../output_of_generator.js', 'w')
 def field_index(allfields, name):
     """Since we use JavaScript arrays, but pyln.proto.msg uses names"""
     for i, f in enumerate(allfields):
@@ -15,7 +15,7 @@ def field_index(allfields, name):
 def generate_towire_field(field, allfields):
     """Generate towire for a field, given it may be a complex type"""
     if isinstance(field.fieldtype, pyln.proto.message.SizedArrayType):
-        print('    assert.equal(value[_n].length == {fixedlen})\n'
+        file.write('    assert.equal(value[_n].length == {fixedlen})\n'
               .format(fixedlen=field.fieldtype.arraysize))
 
     if isinstance(field.fieldtype, pyln.proto.message.array_types.ArrayType):
@@ -29,11 +29,11 @@ def generate_towire_field(field, allfields):
         # a length for!
         # FIXME: Make sure that all fields which use this length are the same!
         findex = field_index(allfields, field.fieldtype.len_for[0].name)
-        print('    buf = Buffer.concat([buf, towire_{ftype}(value[{findex}].length)]);\n'
+        file.write('    buf = Buffer.concat([buf, towire_{ftype}(value[{findex}].length)]);\n'
               .format(ftype=field.fieldtype.underlying_type.name,
                       findex=findex))
     else:
-        print('    buf = Buffer.concat([buf, towire_{ftype}(value[_n++])]);\n'
+        file.write('    buf = Buffer.concat([buf, towire_{ftype}(value[_n++])]);\n'
               .format(ftype=field.fieldtype.name))
 
 
@@ -52,7 +52,7 @@ def generate_fromwire_field(field, allfields):
         is_array = False
 
     if is_array:
-        print('    v = [];\n'
+        file.write('    v = [];\n'
               '    for (let i = 0; {limit}; i++) {{\n'
               '        v.push(fromwire_{ftype}(buffer));\n'
               '    }}\n'
@@ -64,101 +64,87 @@ def generate_fromwire_field(field, allfields):
         # We don't store lengths in the returned values, we just
         # keep local vars so we can use them we we read the actual
         # field
-        print('    let lenfield_{fname} = fromwire_{ftype}(buffer);'
+        file.write('    let lenfield_{fname} = fromwire_{ftype}(buffer);'
               .format(fname=field.name,
                       ftype=field.fieldtype.underlying_type.name))
     else:
-        print('    value.push(fromwire_{ftype}(buffer));\n'
+        file.write('    value.push(fromwire_{ftype}(buffer));\n'
               .format(ftype=field.fieldtype.name))
 
 
 def generate_tlvtype(tlvtype: 'TlvMessageType'):
     # Generate the fromwire / towire routines
     for f in tlvtype.fields:
-        print('function towire_{tlvname}_{fname}(value)\n'
+        file.write('function towire_{tlvname}_{fname}(value)\n'
               '{{'
               .format(tlvname=tlvtype.name, fname=f.name))
-        print('    let _n = 0;\n'
-              '    let buf = Buffer;\n')
+        file.write('    let _n = 0;\n'
+              '    let buf = Buffer.alloc(0);\n')
         for subf in f.fields:
             generate_towire_field(subf, f.fields)
-        print('\n    assert(value.length() == _n);\n'
+        file.write('\n    assert(value.length == _n);\n'
               '    return buf;\n'
               '}\n')
 
-        print('function fromwire_{tlvname}_{fname}(buffer)\n'
+        file.write('function fromwire_{tlvname}_{fname}(buffer)\n'
               '{{'
               .format(tlvname=tlvtype.name, fname=f.name))
-        print('    _n = 0;\n'
+        file.write('    _n = 0;\n'
               '    value = [];\n')
         for subf in f.fields:
             generate_fromwire_field(subf, f.fields)
-        print('\n    return value;\n'
+        file.write('\n    return value;\n'
               '}\n')
 
     # Now, generate table
-    print('const tlv_{} = {{\n'.format(tlvtype.name))
+    file.write('const tlv_{} = {{\n'.format(tlvtype.name))
     for f in tlvtype.fields:
-        print('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],'
+        file.write('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],'
               .format(num=f.number, tlvname=tlvtype.name, fname=f.name))
-    print('}\n')
+    file.write('}\n')
 
 
 def generate_msgtype(name: str):
-    print('function towire_{tlvname}(value)\n'
+    file.write('function towire_{tlvname}(value)\n'
               '{{'
               .format(tlvname=name.name))
-    print('    let _n = 0;\n'
-          '    let buf = Buffer;')
+    file.write('    let _n = 0;\n'
+          '    let buf = Buffer.alloc(0);')
     for f in name.fields:
         generate_towire_field(f, name.fields)
-    print('    assert(value.length() == _n);\n'
+    file.write('    assert(value.length == _n);\n'
           '    return buf;\n'
           '}')
-    print('function fromwire_{tlvname}(buffer)\n'
+    file.write('function fromwire_{tlvname}(buffer)\n'
               '{{'
               .format(tlvname=name.name))
-    print('    _n = 0;\n'
+    file.write('    _n = 0;\n'
           '    value = [];')
     for f in name.fields:
         generate_fromwire_field(f, name.fields)
-    print('\n    return value;\n'
+    file.write('\n    return value;\n'
           '}\n')
-    # Now, generate table
-    print('const tlv_{} = {{\n'.format(name.name))
-    for f in name.fields:
-        print('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],'
-              .format(num=name.number, tlvname=name.name, fname=f.name))
-    print('}\n')
-    # print(dir(name.fields.__getattribute__))
 
 def generate_subtype(name: str):
-    print('function towire_{tlvname}(value)\n'
+    file.write('function towire_{tlvname}(value)\n'
               '{{'
               .format(tlvname=name.name))
-    print('    let _n = 0;\n'
-          '    let buf = Buffer;')
+    file.write('    let _n = 0;\n'
+          '    let buf = Buffer.alloc(0);')
     for f in name.fields:
         generate_towire_field(f, name.fields)
-    print('    assert(value.length() == _n);\n'
+    file.write('    assert(value.length == _n);\n'
           '    return buf;\n'
           '}')
-    print('function fromwire_{tlvname}(buffer)\n'
+    file.write('function fromwire_{tlvname}(buffer)\n'
               '{{'
               .format(tlvname=name.name))
-    print('    _n = 0;\n'
+    file.write('    _n = 0;\n'
           '    value = [];')
     for f in name.fields:
         generate_fromwire_field(f, name.fields)
-    print('\n    return value;\n'
+    file.write('\n    return value;\n'
           '}\n')
-    # print(name.__dict__)
-    # Now, generate table
-    # print('const tlv_{} = {{\n'.format(name.name))
-    # for f in name.fields:
-    #     print('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],'
-    #           .format(num=name.number, tlvname=name.name, fname=f.name))
-    # print('}\n')
 
 # We need types from bolt 4.
 csv_lines = []
@@ -188,23 +174,23 @@ args = parser.parse_args()
 # If they don't specify, generate all
 if args.types == []:
     args.types = list(ns.tlvtypes.keys()) + list(ns.subtypes.keys()) + list(ns.messagetypes.keys())
-
+file.write("var assert = require('assert');\n")
 for typename in args.types:
-    # tlvtype = ns.get_tlvtype(typename)
-    # if tlvtype:
-    #     generate_tlvtype(tlvtype)
-    #     continue
+    tlvtype = ns.get_tlvtype(typename)
+    if tlvtype:
+        generate_tlvtype(tlvtype)
+        continue
 
-    # msgtype = ns.get_msgtype(typename)
-    # if msgtype:
-    #     generate_msgtype(msgtype)
-    #     continue
+    msgtype = ns.get_msgtype(typename)
+    if msgtype:
+        generate_msgtype(msgtype)
+        continue
 
     subtype = ns.get_subtype(typename)
     if subtype:
         generate_subtype(subtype)
         continue
 
-    # raise ValueError("Unknown type {}".format(typename))
+    raise ValueError("Unknown type {}".format(typename))
     
         
