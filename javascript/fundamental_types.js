@@ -40,6 +40,8 @@ class IntegerType{
         let buffer=this.val
         if(buffer.length>this.bytelen)
         throw Error("Out of Bounds!")
+        if(buffer.length==0)
+            buffer=Buffer.from('00','hex')
         if(buffer.length<this.bytelen)
             throw Error("Not enough bytes!")
         return (''+BigInt("0x"+buffer.toString('hex')));
@@ -203,6 +205,15 @@ function fromwire_point(buffer){
     return tu;
 }
 
+function towire_point32(value){
+    var tu=new FundamentalHexType(value,32).write();
+    return tu;
+}
+function fromwire_point32(buffer){
+    var tu=new FundamentalHexType(buffer,32).read();
+    return tu;
+}
+
 function towire_short_channel_id(value){
     var tu=new ShortChannelIDType(value).write();
     return tu;
@@ -221,10 +232,10 @@ function fromwire_signature(buffer){
     return tu;
 }
 
-function towire_description(value){
-    return Buffer.from(value.toString('hex'),'hex');
+function towire_utf8(value){
+    return Buffer.from(value.toString());
 }
-function fromwire_description(buffer){
+function fromwire_utf8(buffer){
     return buffer.toString('utf8');
 }
 
@@ -241,10 +252,12 @@ module.exports={
     fromwire_chain_hash,
     towire_channel_id,
     fromwire_channel_id,
-    towire_description,
-    fromwire_description,
+    towire_utf8,
+    fromwire_utf8,
     towire_point,
     fromwire_point,
+    towire_point32,
+    fromwire_point32,
     towire_sha256,
     fromwire_sha256,
     towire_short_channel_id,

@@ -26,13 +26,15 @@ def generate_towire_field(field, allfields, lang):
 
     if isinstance(field.fieldtype, pyln.proto.message.array_types.ArrayType):
         if lang == 'js':
-            print('    for (let v in value[_n]) {{\n'
+            print('    for (let v of value) {{\n'
                   '        buf = Buffer.concat([buf, towire_{ftype}(v)]);\n'
+                  '        _n++;\n' #Should be here?..
                   '    }}'
                   .format(ftype=field.fieldtype.elemtype.name), file=ofile)
         elif lang == 'py':
             print('    for v in value["{fname}"]:\n'
                   '        buf += towire_{ftype}(v);'
+                  '        _n += 1' #this one too..
                   .format(fname=field.name,
                           ftype=field.fieldtype.elemtype.name), file=ofile)
     elif isinstance(field.fieldtype,
@@ -51,16 +53,16 @@ def generate_towire_field(field, allfields, lang):
                           lenfield=field.fieldtype.len_for[0].name), file=ofile)
     else:
         if lang == 'js':
-            print('    buf = Buffer.concat([buf, towire_{ftype}(value[_n])]);'
+            print('    buf = Buffer.concat([buf, towire_{ftype}(value[_n++])]);'
                   .format(ftype=field.fieldtype.name), file=ofile)
         elif lang == 'py':
             print('    buf += towire_{ftype}(value["{fname}"])'
                   .format(fname=field.name,
                           ftype=field.fieldtype.name), file=ofile)
-    if lang == 'js':
-        print('    _n++;', file=ofile)
-    elif lang == 'py':
-        print('    _n += 1', file=ofile)
+    # if lang == 'js':
+    #     print('    _n++;', file=ofile)
+    # elif lang == 'py':
+    #     print('    _n += 1', file=ofile)
 
 
 def generate_fromwire_field(field, allfields, lang):
@@ -74,7 +76,7 @@ def generate_fromwire_field(field, allfields, lang):
     elif isinstance(field.fieldtype, pyln.proto.message.EllipsisArrayType):
         is_array = True
         if lang == 'js':
-            limitstr = 'buffer.length != 0'
+            limitstr = 'buffer.length'
         elif lang == 'py':
             limitstr = 'len(buffer) != 0'
     else:
@@ -83,8 +85,8 @@ def generate_fromwire_field(field, allfields, lang):
     if is_array:
         if lang == 'js':
             print('    v = [];\n'
-                  '    for (let i = 0; {limit}; i++) {{\n'
-                  '        v.push(fromwire_{ftype}(buffer));\n'
+                  '    for (let i = 0; i<{limit}; i++) {{\n'
+                  '        v.push(fromwire_{ftype}(Buffer.from(buffer[i].toString(16),"hex")));\n'
                   '    }}\n'
                   '    value.push(v);'
               .format(ftype=field.fieldtype.elemtype.name,
