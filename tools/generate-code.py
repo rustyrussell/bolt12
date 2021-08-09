@@ -33,8 +33,7 @@ def generate_towire_field(field, allfields, lang):
                   .format(ftype=field.fieldtype.elemtype.name), file=ofile)
         elif lang == 'py':
             print('    for v in value["{fname}"]:\n'
-                  '        buf += towire_{ftype}(v);'
-                  '        _n += 1' #this one too..
+                  '        buf += towire_{ftype}(v)'
                   .format(fname=field.name,
                           ftype=field.fieldtype.elemtype.name), file=ofile)
     elif isinstance(field.fieldtype,
@@ -61,9 +60,12 @@ def generate_towire_field(field, allfields, lang):
                           ftype=field.fieldtype.name), file=ofile)
     # if lang == 'js':
     #     print('    _n++;', file=ofile)
-    # elif lang == 'py':
-    #     print('    _n += 1', file=ofile)
 
+    # We increment this once for each field we write, so at the end
+    # we assert that this is the number of fields in the dictionary.
+    if lang == 'py':
+         print('    _n += 1', file=ofile)
+ 
 
 def generate_fromwire_field(field, allfields, lang):
     """Generate fromwire for a field, given it may be a complex type"""
@@ -76,7 +78,7 @@ def generate_fromwire_field(field, allfields, lang):
     elif isinstance(field.fieldtype, pyln.proto.message.EllipsisArrayType):
         is_array = True
         if lang == 'js':
-            limitstr = 'buffer.length'
+            limitstr = 'i < buffer.length'
         elif lang == 'py':
             limitstr = 'len(buffer) != 0'
     else:
@@ -85,7 +87,7 @@ def generate_fromwire_field(field, allfields, lang):
     if is_array:
         if lang == 'js':
             print('    v = [];\n'
-                  '    for (let i = 0; i<{limit}; i++) {{\n'
+                  '    for (let i = 0; {limit}; i++) {{\n'
                   '        v.push(fromwire_{ftype}(Buffer.from(buffer[i].toString(16),"hex")));\n'
                   '    }}\n'
                   '    value.push(v);'
