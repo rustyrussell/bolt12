@@ -301,15 +301,17 @@ function decode(paymentRequest){
         // console.log("tagWords")
         // console.log(tagWords.toString())
         tlvs+=(Buffer.from(tagWords)).toString('hex')
-        // if(tagCode=='8'){
-        //     // console.log(tagWords)
-        //     // console.log(parseInt( Buffer.from(tagWords.slice(0,4)).toString('hex'),16))
-        //     tlvs+=(Buffer.from(tagWords)).toString('hex')
-        //     // console.log(words_8bit.slice(0,18))
-        //     // console.log(decodeTu(words_8bit.slice(2,3)))
-        //     console.log(tlvs)
-        //     break
-        // }
+        if(tagCode=='30'){
+            // console.log(tagWords)
+            console.log(Buffer.from(tagWords,'hex'));
+
+            // console.log(parseInt( Buffer.from(tagWords.slice(0,4)).toString('hex'),16))
+            // tlvs+=(Buffer.from(tagWords)).toString('hex')
+            // console.log(words_8bit.slice(0,18))
+            // console.log(decodeTu(words_8bit.slice(2,3)))
+            // console.log(tlvs)
+            break
+        }
         // console.log(tlvs)
         // console.log(typeof parseInt(tagCode))
         if(parseInt(tagCode)<240){
@@ -331,11 +333,11 @@ function decode(paymentRequest){
     }
     // console.log(paymentRequest)
     console.log(final_result)
-    console.log(tlv)
-    signature_valid(tlv,sign)
+    // console.log(tlv)
+    // signature_valid(tlv,sign)
     // console.log(sign)
 }
-decode("lno1pg257enxv4ezq+ cneype82um50ynhxgrwdajx283qfwdpl28qqmc78ymlvhmxcsywdk5wrjnj36jryg488qwlrnzyjczlqs85ck65ycmkdk92smwt9zuewdzfe7v4aavvaz5kgv9mkk63v3s0ge0f099kssh3yc95qztx504hu92hnx8ctzhtt08pgk0texz0509tk")
+decode("lno1pqpq86q2fgcnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qcteyqcksu3qvfjkvmmjv5s8gmeqxcczqum9vdhkuernypkxzar9zsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqxqqqquyqq8ncyph3h0xskvfd69nppz2py2nxym7rlq255z4mevv5x7vqh077n792e3gcua5p734l7d2r0x7kat69gx6c3twqexgmplmmjz2tv9hne4j5s")
 module.exports={
     decode
 }
