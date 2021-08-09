@@ -190,10 +190,7 @@ def test_decode():
     def cleanup(fields):
         """Clean up results to match our pretty ones"""
         def cleanup_val(key, val):
-            # Collapse singletons
-            if isinstance(val, dict) and len(val) == 1:
-                return cleanup_val(key, list(val.values())[0])
-            elif isinstance(val, list) and key in ('description', 'vendor', 'currency'):
+            if isinstance(val, list) and key in ('description', 'vendor', 'currency'):
                 return key, bytes(val).decode()
             elif isinstance(val, bytes):
                 return key, val.hex()
@@ -235,7 +232,8 @@ def test_signature():
     offer, _ = dec.result()
 
     assert offer._check_sig('offer', 'signature',
-                            offer.merkle(), offer.values['node_id']['node_id'], offer.values['signature']['sig'])
+                            offer.merkle(), offer.values['node_id'],
+                            offer.values['signature'])
 
 
 def test_check():

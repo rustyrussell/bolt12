@@ -134,6 +134,12 @@ def generate_fromwire_field(field, allfields, lang):
 def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
     # Generate the fromwire / towire routines
     for f in tlvtype.fields:
+        # If there's only one value, we just collapse it
+        if len(f.fields) == 1:
+            singleton = f.fields[0]
+        else:
+            singleton = None
+
         if lang == 'js':
             print('function towire_{tlvname}_{fname}(value)\n'
                   '{{\n'
@@ -147,6 +153,14 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
                   '    buf = bytes()'
                   .format(tlvname=tlvtype.name, fname=f.name),
                   file=ofile)
+
+        # Singletons are collapsed, expand as generated code expects
+        if singleton:
+            if lang == 'js':
+                print('    value = [value]')
+            elif lang == 'py':
+                print('    value = {{"{fname}": value}}'
+                      .format(fname=singleton.name))
 
         for subf in f.fields:
             generate_towire_field(subf, f.fields, lang)
@@ -171,13 +185,26 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
                   .format(tlvname=tlvtype.name, fname=f.name), file=ofile)
         for subf in f.fields:
             generate_fromwire_field(subf, f.fields, lang)
-        if lang == 'js':
-            print('\n'
-                  '    return value;\n'
-                  '}\n', file=ofile)
-        elif lang == 'py':
-            print('\n'
-                  '    return value, buffer\n', file=ofile)
+
+        # Collapse singletons:
+        if singleton:
+            if lang == 'js':
+                print('\n'
+                      '    return value[0];\n'
+                      '}\n', file=ofile)
+            elif lang == 'py':
+                print('\n'
+                      '    return value["{fname}"], buffer\n'
+                      .format(fname=singleton.name),
+                      file=ofile)
+        else:
+            if lang == 'js':
+                print('\n'
+                      '    return value;\n'
+                      '}\n', file=ofile)
+            elif lang == 'py':
+                print('\n'
+                      '    return value, buffer\n', file=ofile)
 
     # Now, generate table
     if lang == 'js':
