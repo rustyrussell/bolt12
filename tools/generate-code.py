@@ -58,9 +58,9 @@ def generate_towire_field(field, allfields, lang):
                   .format(fname=field.name,
                           ftype=field.fieldtype.name), file=ofile)
     if lang == 'js':
-        print('    _n++;')
+        print('    _n++;', file=ofile)
     elif lang == 'py':
-        print('    _n += 1')
+        print('    _n += 1', file=ofile)
 
 
 def generate_fromwire_field(field, allfields, lang):
