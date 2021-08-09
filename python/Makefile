@@ -2,7 +2,7 @@
 
 default: generated.py
 
-TOPDIR := ../..
+TOPDIR := ..
 
 generated.py: $(TOPDIR)/specs/bolt12.csv $(TOPDIR)/specs/bolt4.csv $(TOPDIR)/specs/bolt1.csv preamble.py $(TOPDIR)/tools/generate-code.py
 	(cat preamble.py && ORIGDIR=`pwd` && cd $(TOPDIR) && tools/generate-code.py --language=py) > $@

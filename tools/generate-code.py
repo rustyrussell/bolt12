@@ -279,8 +279,8 @@ ns = pyln.proto.message.MessageNamespace()
 # Old version of pyln.proto are missing modern fundamental types.
 if not 'utf8' in ns.fundamentaltypes:
     ns.fundamentaltypes['utf8'] = IntegerType('utf8', 1, 'B')
-if not 'pubkey32' in ns.fundamentaltypes:
-    ns.fundamentaltypes['pubkey32'] = FundamentalHexType('pubkey32', 32)
+if not 'point32' in ns.fundamentaltypes:
+    ns.fundamentaltypes['point32'] = FundamentalHexType('point32', 32)
 if not 'bip340sig' in ns.fundamentaltypes:
     ns.fundamentaltypes['bip340sig'] = FundamentalHexType('bip340sig', 32)
 
