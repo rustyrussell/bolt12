@@ -1,0 +1,4 @@
+[submodule "lightning-rfc"]
+	path = lightning-rfc
+	url = https://github.com/rustyrussell/lightning-rfc.git
+	branch = guilt/offers

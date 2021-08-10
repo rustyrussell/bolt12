@@ -155,12 +155,17 @@ def fromwire_bip340sig(buffer: bytes) -> Tuple[bytes, bytes]:
     return helper_fromwire_bytes(buffer, 64)
 
 
-def towire_utf8(value: int) -> bytes:
-    return helper_towire_int(value, 1)
+def towire_array_utf8(value: str) -> bytes:
+    return bytes(value, encoding='utf8')
 
 
-def fromwire_utf8(buffer: bytes) -> Tuple[int, bytes]:
-    return helper_fromwire_int(buffer, 1)
+def fromwire_array_utf8(buffer: bytes, size: int) -> Tuple[str, bytes]:
+    bval, buffer = helper_fromwire_bytes(buffer, size)
+    try:
+        return bval.decode(), buffer
+    except UnicodeDecodeError as e:
+        raise ValueError("Bad UTF-8 at {}-{} of 0x{}"
+                         .format(e.start, e.end, bval.hex()))
 
 
 def towire_short_channel_id(value: str) -> bytes:

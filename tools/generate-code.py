@@ -16,6 +16,8 @@ def field_index(allfields, name):
 def generate_towire_field(field, allfields, lang):
     """Generate towire for a field, given it may be a complex type"""
     if isinstance(field.fieldtype, pyln.proto.message.SizedArrayType):
+        # FIXME: UTF-8 arrays are special: length we want is in bytes!
+        # However, only fixed-length UTF-8 array is currency, which is ASCII
         if lang == 'js':
             print('    assert.equal(value[_n].length == {fixedlen})'
                   .format(fixedlen=field.fieldtype.arraysize), file=ofile)
@@ -25,30 +27,44 @@ def generate_towire_field(field, allfields, lang):
                           fixedlen=field.fieldtype.arraysize), file=ofile)
 
     if isinstance(field.fieldtype, pyln.proto.message.array_types.ArrayType):
-        if lang == 'js':
-            print('    for (let v of value) {{\n'
-                  '        buf = Buffer.concat([buf, towire_{ftype}(v)]);\n'
-                  '        _n++;\n' #Should be here?..
-                  '    }}'
-                  .format(ftype=field.fieldtype.elemtype.name), file=ofile)
-        elif lang == 'py':
-            print('    for v in value["{fname}"]:\n'
-                  '        buf += towire_{ftype}(v);'
-                  '        _n += 1' #this one too..
-                  .format(fname=field.name,
-                          ftype=field.fieldtype.elemtype.name), file=ofile)
+        # UTF-8 arrays are special
+        if field.fieldtype.elemtype.name == 'utf8':
+            if lang == 'js':
+                print('    buf = Buffer.concat([buf, towire_array_utf8(value)]);\n'
+                      '    _n++;',
+                      file=ofile)
+            elif lang == 'py':
+                print('    buf += towire_array_utf8(value["{fname}"])'
+                      .format(fname=field.name), file=ofile)
+        else:
+            if lang == 'js':
+                print('    for (let v of value) {{\n'
+                      '        buf = Buffer.concat([buf, towire_{ftype}(v)]);\n'
+                      '        _n++;\n' #Should be here?..
+                      '    }}'
+                      .format(ftype=field.fieldtype.elemtype.name), file=ofile)
+            elif lang == 'py':
+                print('    for v in value["{fname}"]:\n'
+                      '        buf += towire_{ftype}(v)'
+                      .format(fname=field.name,
+                              ftype=field.fieldtype.elemtype.name), file=ofile)
     elif isinstance(field.fieldtype,
                     pyln.proto.message.array_types.LengthFieldType):
         # We don't have a value for this, we intuit it from the things its
         # a length for!
         # FIXME: Make sure that all fields which use this length are the same!
         findex = field_index(allfields, field.fieldtype.len_for[0].name)
+        # FIXME: length() is not correct if field is utf8!
+        for f in allfields:
+            if f.name == field.fieldtype.len_for[0].name:
+                assert f.fieldtype.elemtype.name != 'utf8'
+
         if lang == 'js':
             print('    buf = Buffer.concat([buf, towire_{ftype}(value[{findex}].length)]);\n'
                   .format(ftype=field.fieldtype.underlying_type.name,
                           findex=findex), file=ofile)
         elif lang == 'py':
-            print('    buf += towire_{ftype}(value[{lenfield}].length)'
+            print('    buf += towire_{ftype}(len(value[{lenfield}]))'
                   .format(ftype=field.fieldtype.underlying_type.name,
                           lenfield=field.fieldtype.len_for[0].name), file=ofile)
     else:
@@ -61,47 +77,63 @@ def generate_towire_field(field, allfields, lang):
                           ftype=field.fieldtype.name), file=ofile)
     # if lang == 'js':
     #     print('    _n++;', file=ofile)
-    # elif lang == 'py':
-    #     print('    _n += 1', file=ofile)
 
+    # We increment this once for each field we write, so at the end
+    # we assert that this is the number of fields in the dictionary.
+    if lang == 'py':
+         print('    _n += 1', file=ofile)
+ 
 
 def generate_fromwire_field(field, allfields, lang):
     """Generate fromwire for a field, given it may be a complex type"""
     if isinstance(field.fieldtype, pyln.proto.message.SizedArrayType):
         is_array = True
         limitstr = 'i < {}'.format(field.fieldtype.arraysize)
+        sizestr = '{}'.format(field.fieldtype.arraysize)
     elif isinstance(field.fieldtype, pyln.proto.message.DynamicArrayType):
         is_array = True
         limitstr = 'i < lenfield_{}'.format(field.fieldtype.lenfield.name)
+        sizestr = 'lenfield_{}'.format(field.fieldtype.lenfield.name)
     elif isinstance(field.fieldtype, pyln.proto.message.EllipsisArrayType):
         is_array = True
         if lang == 'js':
-            limitstr = 'buffer.length'
+            limitstr = 'i < buffer.length'
+            sizestr = 'buffer.length'
         elif lang == 'py':
             limitstr = 'len(buffer) != 0'
+            sizestr = 'len(buffer)'
     else:
         is_array = False
 
     if is_array:
-        if lang == 'js':
-            print('    v = [];\n'
-                  '    for (let i = 0; i<{limit}; i++) {{\n'
-                  '        v.push(fromwire_{ftype}(Buffer.from(buffer[i].toString(16),"hex")));\n'
-                  '    }}\n'
-                  '    value.push(v);'
-              .format(ftype=field.fieldtype.elemtype.name,
-                      limit=limitstr), file=ofile)
-        elif lang == 'py':
-            print('    v = []\n'
-                  '    i = 0\n'
-                  '    while {limit}:\n'
-                  '        val, buffer = fromwire_{ftype}(buffer)\n'
-                  '        v.append(val)\n'
-                  '        i += 1\n'
-                  '    value["{fname}"] = v'
-                  .format(fname=field.name,
-                          ftype=field.fieldtype.elemtype.name,
-                          limit=limitstr), file=ofile)
+        # UTF-8 arrays are special
+        if field.fieldtype.elemtype.name == 'utf8':
+            if lang == 'js':
+                print('    value.push(fromwire_array_utf8(buffer, {}));'
+                      .format(sizestr), file=ofile)
+            elif lang == 'py':
+                print('    value["{fname}"], buffer = fromwire_array_utf8(buffer, {size})'
+                      .format(fname=field.name, size=sizestr), file=ofile)
+        else:
+            if lang == 'js':
+                print('    v = [];\n'
+                      '    for (let i = 0; {limit}; i++) {{\n'
+                      '        v.push(fromwire_{ftype}(buffer));\n'
+                      '    }}\n'
+                      '    value.push(v);'
+                      .format(ftype=field.fieldtype.elemtype.name,
+                              limit=limitstr), file=ofile)
+            elif lang == 'py':
+                print('    v = []\n'
+                      '    i = 0\n'
+                      '    while {limit}:\n'
+                      '        val, buffer = fromwire_{ftype}(buffer)\n'
+                      '        v.append(val)\n'
+                      '        i += 1\n'
+                      '    value["{fname}"] = v'
+                      .format(fname=field.name,
+                              ftype=field.fieldtype.elemtype.name,
+                              limit=limitstr), file=ofile)
     elif isinstance(field.fieldtype,
                     pyln.proto.message.array_types.LengthFieldType):
         # We don't store lengths in the returned values, we just
@@ -132,6 +164,12 @@ def generate_fromwire_field(field, allfields, lang):
 def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
     # Generate the fromwire / towire routines
     for f in tlvtype.fields:
+        # If there's only one value, we just collapse it
+        if len(f.fields) == 1:
+            singleton = f.fields[0]
+        else:
+            singleton = None
+
         if lang == 'js':
             print('function towire_{tlvname}_{fname}(value)\n'
                   '{{\n'
@@ -145,6 +183,14 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
                   '    buf = bytes()'
                   .format(tlvname=tlvtype.name, fname=f.name),
                   file=ofile)
+
+        # Singletons are collapsed, expand as generated code expects
+        if singleton:
+            if lang == 'js':
+                print('    value = [value]')
+            elif lang == 'py':
+                print('    value = {{"{fname}": value}}'
+                      .format(fname=singleton.name))
 
         for subf in f.fields:
             generate_towire_field(subf, f.fields, lang)
@@ -169,13 +215,26 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
                   .format(tlvname=tlvtype.name, fname=f.name), file=ofile)
         for subf in f.fields:
             generate_fromwire_field(subf, f.fields, lang)
-        if lang == 'js':
-            print('\n'
-                  '    return value;\n'
-                  '}\n', file=ofile)
-        elif lang == 'py':
-            print('\n'
-                  '    return value, buffer\n', file=ofile)
+
+        # Collapse singletons:
+        if singleton:
+            if lang == 'js':
+                print('\n'
+                      '    return value[0];\n'
+                      '}\n', file=ofile)
+            elif lang == 'py':
+                print('\n'
+                      '    return value["{fname}"], buffer\n'
+                      .format(fname=singleton.name),
+                      file=ofile)
+        else:
+            if lang == 'js':
+                print('\n'
+                      '    return value;\n'
+                      '}\n', file=ofile)
+            elif lang == 'py':
+                print('\n'
+                      '    return value, buffer\n', file=ofile)
 
     # Now, generate table
     if lang == 'js':

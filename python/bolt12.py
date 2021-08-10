@@ -279,8 +279,8 @@ class Offer(Bolt12):
         if 'signature' in self.values:
             if not self._check_sig("offer", "signature",
                                    self.offer_id,
-                                   self.values['node_id']['node_id'],
-                                   self.values['signature']['sig']):
+                                   self.values['node_id'],
+                                   self.values['signature']):
                 return False, "Bad signature"
 
         # BOLT #12:
