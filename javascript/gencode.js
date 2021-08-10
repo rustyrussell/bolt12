@@ -6,8 +6,8 @@ const {
     fromwire_chain_hash,
     towire_channel_id,
     fromwire_channel_id,
-    towire_utf8,
-    fromwire_utf8,
+    towire_array_utf8,
+    fromwire_array_utf8,
     towire_point,
     fromwire_point,
     towire_point32,
@@ -16,8 +16,8 @@ const {
     fromwire_sha256,
     towire_short_channel_id,
     fromwire_short_channel_id,
-    towire_signature,
-    fromwire_signature,
+    towire_bip340sig,
+    fromwire_bip340sig,
     towire_tu16,
     fromwire_tu16,
     towire_tu32,
@@ -39,11 +39,11 @@ const {
 // console.log(fromwire_offer_amount(towire_offer_amount(['1000'])))
 // --> [ '1000' ]
 
-// console.log (towire_offer_description(['a','d','i','t','y','a']));
+// console.log (towire_offer_description(['aditya']));
 // --> <Buffer 61 64 69 74 79 61>
 
-// console.log(fromwire_offer_description(towire_offer_description(['a','d','i','t','y','a'])));
-// [ [ 'a', 'd', 'i', 't', 'y', 'a' ] ]
+// console.log(fromwire_offer_description(towire_offer_description(['aditya'])));
+// --> aditya
 
 // console.log(towire_offer_node_id(['4b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605']));
 // --> <Buffer 4b 9a 1f a8 e0 06 f1 e3 93 7f 65 f6 6c 40 8e 6d a8 e1 ca 72 8e a4 32 22 a7 38 1d f1 cc 44 96 05> ~Will throw error if length is not appropriate(Point32)
@@ -56,28 +56,30 @@ const {
 
 // console.log(fromwire_tlv_payload_amt_to_forward(towire_tlv_payload_amt_to_forward(['100000000000000'])))
 // --> [ '100000000000000' ]
-
 function towire_tlv_payload_amt_to_forward(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
 }
+
 function fromwire_tlv_payload_amt_to_forward(buffer)
 {
     _n = 0;
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_tlv_payload_outgoing_cltv_value(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -89,13 +91,14 @@ function fromwire_tlv_payload_outgoing_cltv_value(buffer)
     value = [];
     value.push(fromwire_tu32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_tlv_payload_short_channel_id(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_short_channel_id(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -107,7 +110,7 @@ function fromwire_tlv_payload_short_channel_id(buffer)
     value = [];
     value.push(fromwire_short_channel_id(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_tlv_payload_payment_data(value)
@@ -128,9 +131,9 @@ function fromwire_tlv_payload_payment_data(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<i < 32; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < 32; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
     value.push(fromwire_tu64(buffer));
@@ -149,6 +152,7 @@ function towire_offer_chains(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_chain_hash(v)]);
         _n++;
@@ -161,23 +165,22 @@ function fromwire_offer_chains(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_chain_hash(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_chain_hash(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_currency(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
-    for (let v of value) {
-        buf = Buffer.concat([buf, towire_utf8(v)]);
-        _n++;
-    }
+    value = [value]
+    buf = Buffer.concat([buf, towire_array_utf8(value)]);
+    _n++;
     assert(value.length == _n);
     return buf;
 }
@@ -186,19 +189,16 @@ function fromwire_offer_currency(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_utf8(Buffer.from(buffer[i].toString(16),"hex")));
-    }
-    value.push(v);
+    value.push(fromwire_array_utf8(buffer, buffer.length));
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_amount(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -210,17 +210,16 @@ function fromwire_offer_amount(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_description(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
-    for (let v of value) {
-        buf = Buffer.concat([buf, towire_utf8(v)]);
-        _n++;
-    }
+    value = [value]
+    buf = Buffer.concat([buf, towire_array_utf8(value)]);
+    _n++;
     assert(value.length == _n);
     return buf;
 }
@@ -229,19 +228,16 @@ function fromwire_offer_description(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_utf8(Buffer.from(buffer[i].toString(16),"hex")));
-    }
-    value.push(v);
+    value.push(fromwire_array_utf8(buffer, buffer.length));
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_features(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_byte(v)]);
         _n++;
@@ -254,19 +250,20 @@ function fromwire_offer_features(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_absolute_expiry(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -278,13 +275,14 @@ function fromwire_offer_absolute_expiry(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_paths(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_blinded_path(v)]);
         _n++;
@@ -297,23 +295,22 @@ function fromwire_offer_paths(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_blinded_path(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_blinded_path(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_vendor(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
-    for (let v of value) {
-        buf = Buffer.concat([buf, towire_utf8(v)]);
-        _n++;
-    }
+    value = [value]
+    buf = Buffer.concat([buf, towire_array_utf8(value)]);
+    _n++;
     assert(value.length == _n);
     return buf;
 }
@@ -322,19 +319,16 @@ function fromwire_offer_vendor(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_utf8(Buffer.from(buffer[i].toString(16),"hex")));
-    }
-    value.push(v);
+    value.push(fromwire_array_utf8(buffer, buffer.length));
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_quantity_min(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -346,13 +340,14 @@ function fromwire_offer_quantity_min(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_quantity_max(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -364,7 +359,7 @@ function fromwire_offer_quantity_max(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_recurrence(value)
@@ -380,10 +375,14 @@ function towire_offer_recurrence(value)
 function fromwire_offer_recurrence(buffer)
 {
     _n = 0;
-    value = [];
-    value.push(fromwire_byte(buffer));
-    value.push(fromwire_tu32(buffer));
-
+    value = {};
+    // value.push(fromwire_byte(buffer));
+    // value.push(fromwire_tu32(buffer));
+    
+    //Temporary fix!
+    value['time_unit']=(fromwire_byte(Buffer.from(buffer.slice(0,1),'hex')));
+    buffer=buffer.slice(1)
+    value['period']= (fromwire_tu32(Buffer.from(buffer,'hex')));
     return value;
 }
 
@@ -400,19 +399,31 @@ function towire_offer_recurrence_paywindow(value)
 
 function fromwire_offer_recurrence_paywindow(buffer)
 {
-    _n = 0;
-    value = [];
-    value.push(fromwire_u32(buffer));
-    value.push(fromwire_byte(buffer));
-    value.push(fromwire_tu32(buffer));
+    //Yes, I know hard-coding is sacrilege but will have to discuss things for complex types.
+    // _n = 0;
+    value = {};
+    // value.push(fromwire_u32(buffer));
+    // value.push(fromwire_byte(buffer));
+    // value.push(fromwire_tu32(buffer));
+    // return value;
 
+    //Temporary fix.
+    before = fromwire_u32(Buffer.from(buffer.slice(0,4),'hex'))
+    buffer=buffer.slice(4)
+    if(fromwire_byte(Buffer.from(buffer.slice(0,1),'hex')))proportional_am=true
+    else proportional_am=false
+    buffer=buffer.slice(1)
+    after= fromwire_tu32(Buffer.from(buffer,'hex'))
+    value['seconds_before']=before;
+    value['proportional_amount']=(proportional_am);
+    value['seconds_after'] =(after);
     return value;
 }
-
 function towire_offer_recurrence_limit(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -424,7 +435,7 @@ function fromwire_offer_recurrence_limit(buffer)
     value = [];
     value.push(fromwire_tu32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_recurrence_base(value)
@@ -440,10 +451,14 @@ function towire_offer_recurrence_base(value)
 function fromwire_offer_recurrence_base(buffer)
 {
     _n = 0;
-    value = [];
-    value.push(fromwire_byte(buffer));
-    value.push(fromwire_tu64(buffer));
+    value = {};
+    // value.push(fromwire_byte(buffer));
+    // value.push(fromwire_tu64(buffer));
 
+    //Temporary fix.
+    value['start_any_period']=(fromwire_byte(Buffer.from(buffer.slice(0,1),'hex')));
+    buffer=buffer.slice(1)
+    value['basetime']= (fromwire_tu64(Buffer.from(buffer,'hex')));
     return value;
 }
 
@@ -451,6 +466,7 @@ function towire_offer_node_id(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_point32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -462,7 +478,7 @@ function fromwire_offer_node_id(buffer)
     value = [];
     value.push(fromwire_point32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_send_invoice(value)
@@ -485,6 +501,7 @@ function towire_offer_refund_for(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_sha256(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -496,13 +513,14 @@ function fromwire_offer_refund_for(buffer)
     value = [];
     value.push(fromwire_sha256(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_offer_signature(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_bip340sig(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -514,7 +532,7 @@ function fromwire_offer_signature(buffer)
     value = [];
     value.push(fromwire_bip340sig(buffer));
 
-    return value;
+    return value[0];
 }
 
 const tlv_offer = {
@@ -542,6 +560,7 @@ function towire_invoice_request_chains(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_chain_hash(v)]);
         _n++;
@@ -554,19 +573,20 @@ function fromwire_invoice_request_chains(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_chain_hash(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_chain_hash(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_offer_id(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_sha256(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -578,13 +598,14 @@ function fromwire_invoice_request_offer_id(buffer)
     value = [];
     value.push(fromwire_sha256(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_amount(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -596,13 +617,14 @@ function fromwire_invoice_request_amount(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_features(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_byte(v)]);
         _n++;
@@ -615,19 +637,20 @@ function fromwire_invoice_request_features(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_quantity(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -639,13 +662,14 @@ function fromwire_invoice_request_quantity(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_recurrence_counter(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -657,13 +681,14 @@ function fromwire_invoice_request_recurrence_counter(buffer)
     value = [];
     value.push(fromwire_tu32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_recurrence_start(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -675,13 +700,14 @@ function fromwire_invoice_request_recurrence_start(buffer)
     value = [];
     value.push(fromwire_tu32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_payer_key(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_point32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -693,17 +719,16 @@ function fromwire_invoice_request_payer_key(buffer)
     value = [];
     value.push(fromwire_point32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_payer_note(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
-    for (let v of value) {
-        buf = Buffer.concat([buf, towire_utf8(v)]);
-        _n++;
-    }
+    value = [value]
+    buf = Buffer.concat([buf, towire_array_utf8(value)]);
+    _n++;
     assert(value.length == _n);
     return buf;
 }
@@ -712,19 +737,16 @@ function fromwire_invoice_request_payer_note(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_utf8(Buffer.from(buffer[i].toString(16),"hex")));
-    }
-    value.push(v);
+    value.push(fromwire_array_utf8(buffer, buffer.length));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_payer_info(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_byte(v)]);
         _n++;
@@ -737,19 +759,20 @@ function fromwire_invoice_request_payer_info(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_replace_invoice(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_sha256(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -761,13 +784,14 @@ function fromwire_invoice_request_replace_invoice(buffer)
     value = [];
     value.push(fromwire_sha256(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_request_payer_signature(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_bip340sig(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -779,7 +803,7 @@ function fromwire_invoice_request_payer_signature(buffer)
     value = [];
     value.push(fromwire_bip340sig(buffer));
 
-    return value;
+    return value[0];
 }
 
 const tlv_invoice_request = {
@@ -801,6 +825,7 @@ function towire_invoice_chains(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_chain_hash(v)]);
         _n++;
@@ -813,19 +838,20 @@ function fromwire_invoice_chains(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_chain_hash(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_chain_hash(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_offer_id(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_sha256(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -837,13 +863,14 @@ function fromwire_invoice_offer_id(buffer)
     value = [];
     value.push(fromwire_sha256(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_amount(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -855,17 +882,16 @@ function fromwire_invoice_amount(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_description(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
-    for (let v of value) {
-        buf = Buffer.concat([buf, towire_utf8(v)]);
-        _n++;
-    }
+    value = [value]
+    buf = Buffer.concat([buf, towire_array_utf8(value)]);
+    _n++;
     assert(value.length == _n);
     return buf;
 }
@@ -874,19 +900,16 @@ function fromwire_invoice_description(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_utf8(Buffer.from(buffer[i].toString(16),"hex")));
-    }
-    value.push(v);
+    value.push(fromwire_array_utf8(buffer, buffer.length));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_features(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_byte(v)]);
         _n++;
@@ -899,19 +922,20 @@ function fromwire_invoice_features(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_paths(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_blinded_path(v)]);
         _n++;
@@ -924,19 +948,20 @@ function fromwire_invoice_paths(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_blinded_path(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_blinded_path(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_blindedpay(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_blinded_payinfo(v)]);
         _n++;
@@ -949,19 +974,20 @@ function fromwire_invoice_blindedpay(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_blinded_payinfo(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_blinded_payinfo(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_blinded_capacities(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_u64(v)]);
         _n++;
@@ -974,23 +1000,22 @@ function fromwire_invoice_blinded_capacities(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_u64(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_u64(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_vendor(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
-    for (let v of value) {
-        buf = Buffer.concat([buf, towire_utf8(v)]);
-        _n++;
-    }
+    value = [value]
+    buf = Buffer.concat([buf, towire_array_utf8(value)]);
+    _n++;
     assert(value.length == _n);
     return buf;
 }
@@ -999,19 +1024,16 @@ function fromwire_invoice_vendor(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_utf8(Buffer.from(buffer[i].toString(16),"hex")));
-    }
-    value.push(v);
+    value.push(fromwire_array_utf8(buffer, buffer.length));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_node_id(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_point32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1023,13 +1045,14 @@ function fromwire_invoice_node_id(buffer)
     value = [];
     value.push(fromwire_point32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_quantity(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1041,13 +1064,14 @@ function fromwire_invoice_quantity(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_refund_for(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_sha256(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1059,13 +1083,14 @@ function fromwire_invoice_refund_for(buffer)
     value = [];
     value.push(fromwire_sha256(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_recurrence_counter(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1077,7 +1102,7 @@ function fromwire_invoice_recurrence_counter(buffer)
     value = [];
     value.push(fromwire_tu32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_send_invoice(value)
@@ -1100,6 +1125,7 @@ function towire_invoice_recurrence_start(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1111,13 +1137,14 @@ function fromwire_invoice_recurrence_start(buffer)
     value = [];
     value.push(fromwire_tu32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_recurrence_basetime(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1129,13 +1156,14 @@ function fromwire_invoice_recurrence_basetime(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_payer_key(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_point32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1147,17 +1175,16 @@ function fromwire_invoice_payer_key(buffer)
     value = [];
     value.push(fromwire_point32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_payer_note(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
-    for (let v of value) {
-        buf = Buffer.concat([buf, towire_utf8(v)]);
-        _n++;
-    }
+    value = [value]
+    buf = Buffer.concat([buf, towire_array_utf8(value)]);
+    _n++;
     assert(value.length == _n);
     return buf;
 }
@@ -1166,19 +1193,16 @@ function fromwire_invoice_payer_note(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_utf8(Buffer.from(buffer[i].toString(16),"hex")));
-    }
-    value.push(v);
+    value.push(fromwire_array_utf8(buffer, buffer.length));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_payer_info(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_byte(v)]);
         _n++;
@@ -1191,19 +1215,20 @@ function fromwire_invoice_payer_info(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_created_at(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1215,13 +1240,14 @@ function fromwire_invoice_created_at(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_payment_hash(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_sha256(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1233,13 +1259,14 @@ function fromwire_invoice_payment_hash(buffer)
     value = [];
     value.push(fromwire_sha256(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_relative_expiry(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1251,13 +1278,14 @@ function fromwire_invoice_relative_expiry(buffer)
     value = [];
     value.push(fromwire_tu32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_cltv(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu32(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1269,7 +1297,7 @@ function fromwire_invoice_cltv(buffer)
     value = [];
     value.push(fromwire_tu32(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_fallbacks(value)
@@ -1291,9 +1319,9 @@ function fromwire_invoice_fallbacks(buffer)
     _n = 0;
     value = [];
     let lenfield_num = fromwire_byte(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_num; i++) {
-        v.push(fromwire_fallback_address(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_num; i++) {
+        v+=(fromwire_fallback_address(buffer));
     }
     value.push(v);
 
@@ -1304,6 +1332,7 @@ function towire_invoice_refund_signature(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_bip340sig(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1315,13 +1344,14 @@ function fromwire_invoice_refund_signature(buffer)
     value = [];
     value.push(fromwire_bip340sig(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_replace_invoice(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_sha256(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1333,13 +1363,14 @@ function fromwire_invoice_replace_invoice(buffer)
     value = [];
     value.push(fromwire_sha256(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_signature(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_bip340sig(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1351,7 +1382,7 @@ function fromwire_invoice_signature(buffer)
     value = [];
     value.push(fromwire_bip340sig(buffer));
 
-    return value;
+    return value[0];
 }
 
 const tlv_invoice = {
@@ -1388,6 +1419,7 @@ function towire_invoice_error_erroneous_field(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     buf = Buffer.concat([buf, towire_tu64(value[_n++])]);
     assert(value.length == _n);
     return buf;
@@ -1399,13 +1431,14 @@ function fromwire_invoice_error_erroneous_field(buffer)
     value = [];
     value.push(fromwire_tu64(buffer));
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_error_suggested_value(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
+    value = [value]
     for (let v of value) {
         buf = Buffer.concat([buf, towire_byte(v)]);
         _n++;
@@ -1418,23 +1451,22 @@ function fromwire_invoice_error_suggested_value(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < buffer.length; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
-    return value;
+    return value[0];
 }
 
 function towire_invoice_error_error(value)
 {
     let _n = 0;
     let buf = Buffer.alloc(0);
-    for (let v of value) {
-        buf = Buffer.concat([buf, towire_utf8(v)]);
-        _n++;
-    }
+    value = [value]
+    buf = Buffer.concat([buf, towire_array_utf8(value)]);
+    _n++;
     assert(value.length == _n);
     return buf;
 }
@@ -1443,13 +1475,9 @@ function fromwire_invoice_error_error(buffer)
 {
     _n = 0;
     value = [];
-    v = [];
-    for (let i = 0; i<buffer.length; i++) {
-        v.push(fromwire_utf8(Buffer.from(buffer[i].toString(16),"hex")));
-    }
-    value.push(v);
+    value.push(fromwire_array_utf8(buffer, buffer.length));
 
-    return value;
+    return value[0];
 }
 
 const tlv_invoice_error = {
@@ -1479,9 +1507,9 @@ function fromwire_onionmsg_path(buffer)
     value = [];
     value.push(fromwire_point(buffer));
     let lenfield_enclen = fromwire_u16(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_enclen; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_enclen; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
@@ -1509,9 +1537,9 @@ function fromwire_blinded_path(buffer)
     value = [];
     value.push(fromwire_point(buffer));
     let lenfield_num_hops = fromwire_u16(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_num_hops; i++) {
-        v.push(fromwire_onionmsg_path(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_num_hops; i++) {
+        v+=(fromwire_onionmsg_path(buffer));
     }
     value.push(v);
 
@@ -1543,9 +1571,9 @@ function fromwire_blinded_payinfo(buffer)
     value.push(fromwire_u32(buffer));
     value.push(fromwire_u16(buffer));
     let lenfield_flen = fromwire_u16(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_flen; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_flen; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
@@ -1573,9 +1601,9 @@ function fromwire_fallback_address(buffer)
     value = [];
     value.push(fromwire_byte(buffer));
     let lenfield_len = fromwire_u16(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_len; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_len; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
@@ -1719,9 +1747,9 @@ function fromwire_temporary_channel_failure(buffer)
     _n = 0;
     value = [];
     let lenfield_len = fromwire_u16(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_len; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_len; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
@@ -1797,9 +1825,9 @@ function fromwire_amount_below_minimum(buffer)
     value = [];
     value.push(fromwire_u64(buffer));
     let lenfield_len = fromwire_u16(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_len; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_len; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
@@ -1827,9 +1855,9 @@ function fromwire_fee_insufficient(buffer)
     value = [];
     value.push(fromwire_u64(buffer));
     let lenfield_len = fromwire_u16(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_len; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_len; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
@@ -1857,9 +1885,9 @@ function fromwire_incorrect_cltv_expiry(buffer)
     value = [];
     value.push(fromwire_u32(buffer));
     let lenfield_len = fromwire_u16(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_len; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_len; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
@@ -1885,9 +1913,9 @@ function fromwire_expiry_too_soon(buffer)
     _n = 0;
     value = [];
     let lenfield_len = fromwire_u16(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_len; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_len; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
@@ -1971,9 +1999,9 @@ function fromwire_channel_disabled(buffer)
     value = [];
     value.push(fromwire_u16(buffer));
     let lenfield_len = fromwire_u16(buffer);
-    v = [];
-    for (let i = 0; i<i < lenfield_len; i++) {
-        v.push(fromwire_byte(Buffer.from(buffer[i].toString(16),"hex")));
+    v = "";
+    for (let i = 0; i < lenfield_len; i++) {
+        v+=(fromwire_byte(buffer));
     }
     value.push(v);
 
@@ -2031,6 +2059,7 @@ function fromwire_mpp_timeout(buffer)
 
     return value;
 }
+
 
 module.exports={
     tlv_tlv_payload,
