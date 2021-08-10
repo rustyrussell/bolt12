@@ -223,19 +223,19 @@ function fromwire_short_channel_id(buffer){
     return tu;
 }
 
-function towire_signature(value){
+function towire_bip340sig(value){
     var tu=new FundamentalHexType(value,64).write();
     return tu;
 }
-function fromwire_signature(buffer){
+function fromwire_bip340sig(buffer){
     var tu=new FundamentalHexType(buffer,64).read();
     return tu;
 }
 
-function towire_utf8(value){
+function towire_array_utf8(value){
     return Buffer.from(value.toString());
 }
-function fromwire_utf8(buffer){
+function fromwire_array_utf8(buffer){
     return buffer.toString('utf8');
 }
 
@@ -252,8 +252,8 @@ module.exports={
     fromwire_chain_hash,
     towire_channel_id,
     fromwire_channel_id,
-    towire_utf8,
-    fromwire_utf8,
+    towire_array_utf8,
+    fromwire_array_utf8,
     towire_point,
     fromwire_point,
     towire_point32,
@@ -262,8 +262,8 @@ module.exports={
     fromwire_sha256,
     towire_short_channel_id,
     fromwire_short_channel_id,
-    towire_signature,
-    fromwire_signature,
+    towire_bip340sig,
+    fromwire_bip340sig,
     towire_tu16,
     fromwire_tu16,
     towire_tu32,

@@ -230,8 +230,8 @@ function signature_valid(tlv,sign){
         alltlvs+=tlv[i]
     let merkle_nodes=[]
     for(let i=0;i<tlv.length;i++)merkle_nodes[merkle_nodes.length]=branch_from_tlv(alltlvs,tlv[i])
-    console.log(alltlvs)
-    console.log(merkle_nodes)
+    // console.log(alltlvs)
+    // console.log(merkle_nodes)
     while(merkle_nodes.length!=1){
         merkle_nodes=leaves(merkle_nodes)
     }
@@ -301,17 +301,17 @@ function decode(paymentRequest){
         // console.log("tagWords")
         // console.log(tagWords.toString())
         tlvs+=(Buffer.from(tagWords)).toString('hex')
-        if(tagCode=='30'){
-            // console.log(tagWords)
-            console.log(Buffer.from(tagWords,'hex'));
+        // if(tagCode=='30'){
+        //     // console.log(tagWords)
+        //     console.log(Buffer.from(tagWords,'hex'));
 
-            // console.log(parseInt( Buffer.from(tagWords.slice(0,4)).toString('hex'),16))
-            // tlvs+=(Buffer.from(tagWords)).toString('hex')
-            // console.log(words_8bit.slice(0,18))
-            // console.log(decodeTu(words_8bit.slice(2,3)))
-            // console.log(tlvs)
-            break
-        }
+        //     // console.log(parseInt( Buffer.from(tagWords.slice(0,4)).toString('hex'),16))
+        //     // tlvs+=(Buffer.from(tagWords)).toString('hex')
+        //     // console.log(words_8bit.slice(0,18))
+        //     // console.log(decodeTu(words_8bit.slice(2,3)))
+        //     // console.log(tlvs)
+        //     break
+        // }
         // console.log(tlvs)
         // console.log(typeof parseInt(tagCode))
         if(parseInt(tagCode)<240){
@@ -324,6 +324,9 @@ function decode(paymentRequest){
         tagName,
         data: parser(tagWords) // only fallback address needs coinNetwork
         })
+        if(tagCode=='64'){
+            console.log(parser(tagWords))
+        }
         if(tagCode=="240")
             sign=parser(tagWords)
     }
@@ -333,11 +336,11 @@ function decode(paymentRequest){
     }
     // console.log(paymentRequest)
     console.log(final_result)
-    // console.log(tlv)
-    // signature_valid(tlv,sign)
+    console.log(tlv)
+    signature_valid(tlv,sign)
     // console.log(sign)
 }
-decode("lno1pqpq86q2fgcnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qcteyqcksu3qvfjkvmmjv5s8gmeqxcczqum9vdhkuernypkxzar9zsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqxqqqquyqq8ncyph3h0xskvfd69nppz2py2nxym7rlq255z4mevv5x7vqh077n792e3gcua5p734l7d2r0x7kat69gx6c3twqexgmplmmjz2tv9hne4j5s")
+decode("lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg")
 module.exports={
     decode
 }

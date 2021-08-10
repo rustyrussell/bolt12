@@ -116,9 +116,9 @@ def generate_fromwire_field(field, allfields, lang):
                       .format(fname=field.name, size=sizestr), file=ofile)
         else:
             if lang == 'js':
-                print('    v = [];\n'
+                print('    v = "";\n'
                       '    for (let i = 0; {limit}; i++) {{\n'
-                      '        v.push(fromwire_{ftype}(buffer));\n'
+                      '        v+=(fromwire_{ftype}(buffer));\n'
                       '    }}\n'
                       '    value.push(v);'
                       .format(ftype=field.fieldtype.elemtype.name,
@@ -187,7 +187,7 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
         # Singletons are collapsed, expand as generated code expects
         if singleton:
             if lang == 'js':
-                print('    value = [value]')
+                print('    value = [value]', file=ofile)
             elif lang == 'py':
                 print('    value = {{"{fname}": value}}'
                       .format(fname=singleton.name))
@@ -332,7 +332,7 @@ def generate_subtype(name: str, lang):
 # We need types from bolt 4.
 csv_lines = []
 for boltnum in (4, 12):
-    with open('specs/bolt{}.csv'.format(boltnum), 'r') as f:
+    with open('../specs/bolt{}.csv'.format(boltnum), 'r') as f:
         csv_lines += f.read().split()
 
 ns = pyln.proto.message.MessageNamespace()
