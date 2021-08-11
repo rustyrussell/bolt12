@@ -7,6 +7,10 @@ const {
 }=require('./gencode.js')
 const sha256 = require('js-sha256');
 const concat = Buffer.concat;
+const {
+    towire_bigsize,
+    fromwire_bigsize,
+}=require('./fundamental_types')
 const ALPHABET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
 const isBech32={};
 const ALPHABET_MAP = {};
@@ -87,23 +91,51 @@ function signature_valid(tlv){
     return merkle_nodes[0]
 }
 // console.log(tlv_offer[8][1](['1000']))
-function decode(paymentRequest){
-    if (typeof paymentRequest !== 'string') throw new Error('Lightning Payment Request must be string')
-    // FIXME: Test vectors
-    paymentRequest=paymentRequest.replace('+','')
-    paymentRequest=paymentRequest.replace(' ','')
-
-    // FIXME: MUST all be UPPER or all LOWER
-    for(let i=0; i<paymentRequest.length; i++){
-        if(!paymentRequest.charAt(i) in isBech32)
-            throw new Error('Not a proper lightning payment request')
+console.log(decode('lno1qcp4256ypqpq86q2pucnq42ngssx2an9wfujqerp0y2pqun4wd68jtn00fkxzcnn9ehhyec6qgqsz83qfwdpl28qqmc78ymlvhmxcsywdk5wrjnj36jryg488qwlrnzyjczlqsp9nyu4phcg6dqhlhzgxagfu7zh3d9re0sqp9ts2yfugvnnm9gxkcnnnkdpa084a6t520h5zhkxsdnghvpukvd43lastpwuh73k29qsy'))
+function decode(paymentReq){
+    if (typeof paymentReq !== 'string') 
+        throw new Error('Lightning Payment Request must be string');
+    let paymentRequest='';
+    for(let i=0;i<paymentReq.length;i++){
+        if(paymentReq[i]=='\n'||paymentReq[i]=='\r'){
+            paymentRequest+=' ';
+            continue;
+        }
+        else paymentRequest+=paymentReq[i];
     }
-    // FIXME: find *last* '1' and previous == prefix.
-    if (paymentRequest.slice(0, 2).toLowerCase() !== 'ln') throw new Error('Not a proper lightning payment request')
-    if (paymentRequest.charAt(3)!='1')throw new Error('Separator not present')
-    encodedData=paymentRequest.slice(4)
-    prefix=paymentRequest.slice(0,3)
-    // console.log(encodedData)
+    for(let i=0;i<paymentRequest.length;i++){
+        if(paymentRequest[i]=='+'){
+            let s=i,e;
+            i++;
+            while(i<paymentRequest.length && paymentRequest[i]==' '){
+                i++;
+            }
+            e=i;
+            if(e==paymentRequest.length || s==0 || paymentRequest.charAt(s-1) in isBech32==false || paymentRequest.charAt(e) in isBech32==false)
+                throw new Error('Lightning Payment Request must be string')
+            paymentRequest=paymentRequest.slice(0,s)+paymentRequest.slice(e);
+        }
+    }
+    if(paymentRequest.indexOf(' ')!=-1||paymentRequest.indexOf('+')!=-1)
+        throw new Error('Lightning Payment Request must be string');
+    
+    if(paymentRequest!=paymentRequest.toLowerCase()&&paymentRequest!=paymentRequest.toUpperCase())
+        throw new Error('Lightning Payment Request must be string');
+    paymentRequest=paymentRequest.toLowerCase();
+    
+    if (paymentRequest.slice(0, 2) != 'ln') 
+        throw new Error('Not a proper lightning payment request');
+
+    if (paymentRequest.indexOf('1')==-1)
+        throw new Error('Separator not present');
+    
+    encodedData=paymentRequest.slice(paymentRequest.lastIndexOf('1')+1);
+    prefix=paymentRequest.slice(0,paymentRequest.lastIndexOf('1'));
+    
+    for(let i=0; i<encodedData.length; i++){
+        if(encodedData.charAt(i) in isBech32==false)
+            throw new Error('Not a proper lightning pay request');
+    }
     let words=[]
     switch(prefix){
         case "lno":
@@ -119,10 +151,8 @@ function decode(paymentRequest){
             TAGPARSER = tlv_invoice
             break;
     default:
-	// FIXME: Mention prefix
-        throw new Error('Not a proper lightning payment request')  
+        throw new Error(prefix.toString() + ' is not a proper lightning prefix')  
     }
-    // console.log(type)
     for (let i=0;i<encodedData.length;i++){
         words[words.length]=ALPHABET_MAP[encodedData.charAt(i)]
     }
@@ -145,6 +175,7 @@ function decode(paymentRequest){
         if(tagCode==0){
             break
         }
+        // console.log(tagCode)
         tagName = TAGPARSER[tagCode][0]
         // parser = TAGPARSER[tagCode][2]
 	// FIXME: BigSize here too..
@@ -158,7 +189,7 @@ function decode(paymentRequest){
         
 
 	// FIXME: BigSize here too..
-        tagLength = words_8bit.slice(0,1)
+        tagLength = ((words_8bit.slice(0,1)));
         tlvs+=(Buffer.from(tagLength)).toString('hex')
         words_8bit = words_8bit.slice(1)
         tagWords = words_8bit.slice(0, tagLength)
@@ -167,12 +198,11 @@ function decode(paymentRequest){
 
 	// FIXME: This test is wrong, < 240 or > 1000.
 	// FIXME: You need to keep this, exclude it in merkle?
-        if(tagCode<240){
+        if(tagCode<240||tagCode>1000){
             tlv[tlv.length]=tlvs
         }
-        // console.log(tagCode)
-        // console.log(tagName)
-        // console.log(TAGPARSER[tagCode][2](Buffer.from(tagWords)))
+        //tags contains all the TLVs(including signature)
+        tags.push(tlvs)
 	// FIXME: handle tagCode not in TAGPARSER:
 	// (i.e. unknown!) *It's ok to be odd*
         fin_content[tagName]=TAGPARSER[tagCode][2](Buffer.from(tagWords))

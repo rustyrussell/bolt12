@@ -234,6 +234,38 @@ function towire_signature(value){
 function fromwire_signature(buffer){
     return buffer.toString('hex');
 }
+function towire_bigsize(value){
+    if (value < 0xFD)
+        return towire_byte(value)
+    else if (value <= 0xFFFF)
+        return Buffer.concat([towire_byte(0xFD), towire_u16(value)])
+    else if (value <= 0xFFFFFFFF)
+        return Buffer.concat([towire_byte(0xFE), towire_u32(value)])
+    else
+        return Buffer.concat([towire_byte(0xFF), towire_u64(value)])
+}
+function fromwire_bigsize(buffer){
+    var val = fromwire_byte(buffer)[0];
+    buffer=buffer.slice(1)
+    let minval;
+    if (val == 0xFD){
+        minval = 0xFD;
+        val = fromwire_u16(buffer);
+    }
+    else if (val == 0xFE){
+        minval = 0x10000;
+        val = fromwire_u32(buffer);
+    }
+    else if (val == 0xFF){
+        minval = 0x100000000;
+        val = fromwire_u64(buffer);
+    }
+    else
+        minval = 0;
+    if (val < minval)
+        throw Error("non minimal-encoded bigsize");
+    return val[0];
+}
 module.exports={
     towire_byte,
     fromwire_byte,
@@ -247,6 +279,8 @@ module.exports={
     fromwire_point,
     towire_point32,
     fromwire_point32,
+    towire_bigsize,
+    fromwire_bigsize,
     towire_sha256,
     fromwire_sha256,
     towire_short_channel_id,

@@ -8,6 +8,8 @@ const {
     fromwire_channel_id,
     towire_array_utf8,
     fromwire_array_utf8,
+    towire_bigsize,
+    fromwire_bigsize,
     towire_point,
     fromwire_point,
     towire_point32,
