@@ -245,8 +245,8 @@ function towire_bigsize(value){
         return Buffer.concat([towire_byte(0xFF), towire_u64(value)])
 }
 function fromwire_bigsize(buffer){
-    var val = fromwire_byte(buffer)[0];
-    buffer=buffer.slice(1)
+    var val = fromwire_byte(buffer);
+    buffer=val[1]
     let minval;
     if (val == 0xFD){
         minval = 0xFD;
@@ -264,7 +264,7 @@ function fromwire_bigsize(buffer){
         minval = 0;
     if (val < minval)
         throw Error("non minimal-encoded bigsize");
-    return val[0];
+    return val;
 }
 module.exports={
     towire_byte,

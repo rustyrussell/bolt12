@@ -91,7 +91,6 @@ function signature_valid(tlv){
     return merkle_nodes[0]
 }
 // console.log(tlv_offer[8][1](['1000']))
-console.log(decode('lno1qcp4256ypqpq86q2pucnq42ngssx2an9wfujqerp0y2pqun4wd68jtn00fkxzcnn9ehhyec6qgqsz83qfwdpl28qqmc78ymlvhmxcsywdk5wrjnj36jryg488qwlrnzyjczlqsp9nyu4phcg6dqhlhzgxagfu7zh3d9re0sqp9ts2yfugvnnm9gxkcnnnkdpa084a6t520h5zhkxsdnghvpukvd43lastpwuh73k29qsy'))
 function decode(paymentReq){
     if (typeof paymentReq !== 'string') 
         throw new Error('Lightning Payment Request must be string');
@@ -160,58 +159,64 @@ function decode(paymentReq){
     const tags = [];
     const final={};
     const fin_content={};
+    const unknowns={};
     final['string']=paymentRequest;
     final['type']=type;
     final['valid']='True'//Need to verify offer_ID with signature.
-    const tlv=[];
-    // console.log(TAGPARSER)
-    // console.log(words_8bit)
-    while(words_8bit.length){
-        let tlvs=''
-	// FIXME: This is a BigSize not an u8.
-        const tagCode = words_8bit[0]
-        tlvs += Buffer.from(words_8bit.slice(0,1)).toString('hex')
-	// FIXME: this is perfectly legal.
+    buffer= (Buffer.from(words_8bit))
+    
+    while(buffer.length){
+        let tlvs=[];
+
+        let res=fromwire_bigsize(buffer);
+        
+        const tagCode=res[0];
+        
+        tlvs.push(Number(''+tagCode));
+        
+        buffer=res[1];
+        
         if(tagCode==0){
-            break
-        }
-        // console.log(tagCode)
-        tagName = TAGPARSER[tagCode][0]
-        // parser = TAGPARSER[tagCode][2]
-	// FIXME: BigSize here too..
-        words_8bit = words_8bit.slice(1)
-        // console.log(TAGPARSER[tagCode])
-        // console.log(tagCode)
-	// FIXME: DUPLICATE!
-        if(tagCode=='0'){
-            break
+            break;        
         }
         
+        res=fromwire_bigsize(buffer);
+        
+        tagLength = res[0];
+        
+        tlvs.push(Number(''+tagLength));
+        
+        buffer = res[1];
+        
+        tagWords = buffer.slice(0, Number(''+tagLength));
 
-	// FIXME: BigSize here too..
-        tagLength = ((words_8bit.slice(0,1)));
-        tlvs+=(Buffer.from(tagLength)).toString('hex')
-        words_8bit = words_8bit.slice(1)
-        tagWords = words_8bit.slice(0, tagLength)
-        words_8bit = words_8bit.slice(tagLength)
-        tlvs+=(Buffer.from(tagWords)).toString('hex')
-
-	// FIXME: This test is wrong, < 240 or > 1000.
-	// FIXME: You need to keep this, exclude it in merkle?
-        if(tagCode<240||tagCode>1000){
-            tlv[tlv.length]=tlvs
+        
+        if (tagCode in TAGPARSER){
+            tagName=TAGPARSER[tagCode][0];
+            fin_content[tagName] = TAGPARSER[tagCode][2](Buffer.from(tagWords));
         }
-        //tags contains all the TLVs(including signature)
-        tags.push(tlvs)
-	// FIXME: handle tagCode not in TAGPARSER:
-	// (i.e. unknown!) *It's ok to be odd*
-        fin_content[tagName]=TAGPARSER[tagCode][2](Buffer.from(tagWords))
+        
+        else if (tagCode%2==1){
+            unknowns[tagCode]=tagWords;
+            fin_content[tagcode]=tagWords.toString('hex');
+        }
+
+        else{
+            throw Error('Invalid: Unknown even field number '+tagCode);
+        }
+
+        tlvs.push(tagWords);
+        
+        buffer=buffer.slice(Number(''+tagLength))
+        
+        if(tagCode<240||tagCode>1000)
+            tags.push(Buffer.concat([Buffer.from(tlvs.slice(0,2)),tlvs[2]]).toString('hex'))
     }
-    final['offer_id']=signature_valid(tlv);
     final['contents']=fin_content;
-    return final;
+    final['offer_id']=signature_valid(tags);
+    console.log(final)
 }
-// console.log(decode("lno1qcp4256ypqpq86q2pucnq42ngssx2an9wfujqerp0y2pqun4wd68jtn00fkxzcnn9ehhyec6qgqsz83qfwdpl28qqmc78ymlvhmxcsywdk5wrjnj36jryg488qwlrnzyjczlqsp9nyu4phcg6dqhlhzgxagfu7zh3d9re0sqp9ts2yfugvnnm9gxkcnnnkdpa084a6t520h5zhkxsdnghvpukvd43lastpwuh73k29qsy"));
+
 module.exports={
     decode
 }
