@@ -112,7 +112,7 @@ function decode(paymentRequest){
             break;
         case "lni":
             type = "Bolt 12 invoice"
-            TAGPARSERS = tlv_invoice
+            TAGPARSER = tlv_invoice
             break;
         default:
         throw new Error('Not a proper lightning payment request')  
