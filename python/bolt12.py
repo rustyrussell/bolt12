@@ -2,9 +2,14 @@
 from typing import Tuple, Optional, Dict, Any, Sequence, Callable, List
 from io import BytesIO
 import bech32
+import calendar
+from datetime import datetime, timezone
+from dateutil.relativedelta import relativedelta
+from collections import namedtuple
 import generated
 import hashlib
 import re
+import time
 from fundamentals import fromwire_bigsize, towire_bigsize
 from key import verify_schnorr, sign_schnorr
 
@@ -131,6 +136,149 @@ def simple_bech32_encode(hrp: str, data: bytes) -> str:
     return encstr
 
 
+class Recurrence(object):
+    """A class representing the period details for a recurring offer"""
+    Period = namedtuple('Period', ['start', 'end', 'paystart', 'payend'])
+
+    def __init__(self, recurrence, recurrence_paywindow=None, recurrence_limit=None, recurrence_base=None):
+        self.time_unit = recurrence['time_unit']
+        self.period = recurrence['period']
+
+        self.paywindow = recurrence_paywindow
+        self.limit = recurrence_limit
+        self.base = recurrence_base
+
+    def has_fixed_base(self) -> bool:
+        """Does this recurrence have a fixed base, or is it from first
+        invoice?"""
+        return self.base is not None
+
+    def can_start_offset(self) -> bool:
+        """Does this recurrence have a fixed base, and allows start at any
+period??"""
+        return self.has_fixed_base() and self.base['start_any_period']
+
+    @staticmethod
+    def _adjust_date(basedate, units, n, sameday):
+        while True:
+            ret = basedate + relativedelta(**{units: n})
+            if not sameday or ret.day == basedate.day:
+                return ret
+
+            # BOLT #12:
+            # - if the day is not within the month, use the last day within
+            #   the month.
+            # Try one day earlier as a base
+            basedate -= relativedelta(days=1)
+
+    def _get_period(self, n: int, basetime: int) -> 'Recurrence.Period':
+        """Return info on period n, ignoring limits"""
+        basedate = datetime.fromtimestamp(basetime, tz=timezone.utc)
+
+        # BOLT #12:
+        # 1. A `time_unit` defining 0 (seconds), 1 (days), 2 (months),
+        #    3 (years).
+        # 2. A `period`, defining how often (in `time_unit`) it has to be
+        #    paid.
+        if self.time_unit == 0:
+            units = 'seconds'
+            sameday = False
+        elif self.time_unit == 1:
+            units = 'days'
+            sameday = False
+        elif self.time_unit == 2:
+            units = 'months'
+            sameday = True
+        elif self.time_unit == 3:
+            units = 'years'
+            sameday = True
+
+        startdate = self._adjust_date(basedate, units, self.period * n, sameday)
+        enddate = self._adjust_date(startdate, units, self.period, sameday)
+
+        # Convert back to UNIX seconds
+        start = int(startdate.timestamp())
+        end = int(enddate.timestamp())
+
+        if self.paywindow is None:
+            # Default is that you can pay during previous period or this one.
+            paystartdate = self._adjust_date(startdate, units, -self.period,
+                                             sameday)
+            paystart = int(paystartdate.timestamp())
+            payend = end
+        else:
+            paystart = start - self.paywindow['seconds_before']
+            payend = start + self.paywindow['seconds_after']
+
+        # You can pay this between paystart and payend.
+        return Recurrence.Period(start, end, paystart, payend)
+
+    def get_period(self,
+                   n: int,
+                   basetime: int = int(time.time())) -> Optional['Recurrence.Period']:
+        """Return the (start,end,paystart,payend) of period n, using the
+        basetime given as first period start (unless has_fixed_base).
+        Returns None if that's past the limit.
+
+        The start,end reflect when the period is, and paystart,payend reflect
+        when you can pay for it.
+
+        """
+        if self.limit is not None and n > self.limit:
+            return None
+        if self.base is not None:
+            basetime = self.base['basetime']
+
+        return self._get_period(n, basetime)
+
+    def get_pay_factor(self, period: 'Recurrence.Period', time=int(time.time())):
+        """Returns factor by much your amount should be altered at time
+        seconds; normally returns 1, but if an offer sets
+        paywindow.proportional_amount, returns less than 1 if we're
+        already into the period.
+
+        """
+        # If there's no proportional payment, we pay full amount
+        if self.paywindow is None or not self.paywindow['proportional_amount']:
+            return 1
+        # Before period starts, we're good.
+        if time < period.start:
+            return 1
+        # This can happen in theory, if paywindow goes beyond end of period.
+        if time > period.end:
+            return 0
+        return (period.end - time) / (period.end - period.start)
+
+    def period_start_offset(self, when: int = int(time.time())):
+        """For a can_start_offset() Recurrence, what period does @when fall in?
+        Can return negtive if before start!
+        """
+        assert self.can_start_offset()
+
+        # Time is slippery!  Estimate using seconds, refine using exact
+        # calculations (which cover leap years, etc etc etc)
+        if self.time_unit == 0:
+            approx_mul = 1
+        elif self.time_unit == 1:
+            approx_mul = 24 * 60 * 60
+        elif self.time_unit == 2:
+            approx_mul = 30 * 24 * 60 * 60
+        elif self.time_unit == 3:
+            approx_mul = 365 * 30 * 24 * 60 * 60
+        
+        period_num = ((when - self.base['basetime'])
+                      // (self.period * approx_mul))
+
+        while True:
+            period = self._get_period(period_num, self.base['basetime'])
+            if when < period.start:
+                period_num -= 1
+            elif when >= period.end:
+                period_num += 1
+            else:
+                return period_num
+
+    
 class Bolt12(object):
     def __init__(self, hrp: str, tlv_table: Dict[str, Tuple[str, Any, Any]], bytestr: bytes):
         self.hrp = hrp
@@ -298,6 +446,17 @@ class Offer(Bolt12):
         #  - FIXME: more!
         return True, ''
 
+    def get_recurrence(self) -> Optional[Recurrence]:
+        """If this offer recurs, returns the details.  Otherwise, None"""
+        # BOLT #12:
+        #   - MAY include `recurrence` to indicate offer should trigger
+        #     time-spaced invoices.
+        if 'recurrence' not in self.values:
+            return None
+        return Recurrence(self.values['recurrence'],
+                          self.values.get('recurrence_paywindow'),
+                          self.values.get('recurrence_limit'),
+                          self.values.get('recurrence_base'))
 
 class InvoiceRequest(Bolt12):
     """Class for an invoice_request"""
