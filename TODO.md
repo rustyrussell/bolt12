@@ -11,7 +11,8 @@
 
 - [x] move js into javascript/ dir -- AS
 - [x] use tools/generate-code.py (merge changes from generate-js.py) -- AS
-- [ ] javascript/Makefile should have generate-
+- [x] javascript/Makefile should generate code -- AS
+- [ ] test against lightning-rfc/bolt12/format-string-test.json
 - [ ] run test vectors in JS -- AS
 - [ ] write some examples -- AS
 - [ ] make v0.0.1alpha of NPM -- AS

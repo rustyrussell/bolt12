@@ -89,12 +89,16 @@ function signature_valid(tlv){
 // console.log(tlv_offer[8][1](['1000']))
 function decode(paymentRequest){
     if (typeof paymentRequest !== 'string') throw new Error('Lightning Payment Request must be string')
+    // FIXME: Test vectors
     paymentRequest=paymentRequest.replace('+','')
     paymentRequest=paymentRequest.replace(' ','')
+
+    // FIXME: MUST all be UPPER or all LOWER
     for(let i=0; i<paymentRequest.length; i++){
         if(!paymentRequest.charAt(i) in isBech32)
             throw new Error('Not a proper lightning payment request')
     }
+    // FIXME: find *last* '1' and previous == prefix.
     if (paymentRequest.slice(0, 2).toLowerCase() !== 'ln') throw new Error('Not a proper lightning payment request')
     if (paymentRequest.charAt(3)!='1')throw new Error('Separator not present')
     encodedData=paymentRequest.slice(4)
@@ -114,7 +118,8 @@ function decode(paymentRequest){
             type = "Bolt 12 invoice"
             TAGPARSER = tlv_invoice
             break;
-        default:
+    default:
+	// FIXME: Mention prefix
         throw new Error('Not a proper lightning payment request')  
     }
     // console.log(type)
@@ -133,33 +138,43 @@ function decode(paymentRequest){
     // console.log(words_8bit)
     while(words_8bit.length){
         let tlvs=''
+	// FIXME: This is a BigSize not an u8.
         const tagCode = words_8bit[0]
         tlvs += Buffer.from(words_8bit.slice(0,1)).toString('hex')
+	// FIXME: this is perfectly legal.
         if(tagCode==0){
             break
         }
         tagName = TAGPARSER[tagCode][0]
-        // parser = TAGPARSER[tagCode][2] 
+        // parser = TAGPARSER[tagCode][2]
+	// FIXME: BigSize here too..
         words_8bit = words_8bit.slice(1)
         // console.log(TAGPARSER[tagCode])
         // console.log(tagCode)
+	// FIXME: DUPLICATE!
         if(tagCode=='0'){
             break
         }
         
-    
+
+	// FIXME: BigSize here too..
         tagLength = words_8bit.slice(0,1)
         tlvs+=(Buffer.from(tagLength)).toString('hex')
         words_8bit = words_8bit.slice(1)
         tagWords = words_8bit.slice(0, tagLength)
         words_8bit = words_8bit.slice(tagLength)
         tlvs+=(Buffer.from(tagWords)).toString('hex')
+
+	// FIXME: This test is wrong, < 240 or > 1000.
+	// FIXME: You need to keep this, exclude it in merkle?
         if(tagCode<240){
             tlv[tlv.length]=tlvs
         }
         // console.log(tagCode)
         // console.log(tagName)
         // console.log(TAGPARSER[tagCode][2](Buffer.from(tagWords)))
+	// FIXME: handle tagCode not in TAGPARSER:
+	// (i.e. unknown!) *It's ok to be odd*
         fin_content[tagName]=TAGPARSER[tagCode][2](Buffer.from(tagWords))
     }
     final['offer_id']=signature_valid(tlv);
