@@ -18,7 +18,9 @@ from key import verify_schnorr, sign_schnorr
 # and tagged as recommended there.  Thus we define H(`tag`,`msg`) as
 # SHA256(SHA256(`tag`) || SHA256(`tag`) || `msg`), and SIG(`tag`,`msg`,`key`)
 # as the signature of H(`tag`,`msg`) using `key`.
-def bolt12_h(tag: bytes, data: bytes = bytes()) -> 'hashlib.HASH':
+
+# FIXME: Returns hashlib.HASH?
+def bolt12_h(tag: bytes, data: bytes = bytes()) -> Any:
     tag_sha = hashlib.sha256(tag).digest()
     ret = hashlib.sha256(tag_sha + tag_sha)
     ret.update(data)
@@ -26,7 +28,7 @@ def bolt12_h(tag: bytes, data: bytes = bytes()) -> 'hashlib.HASH':
 
 
 # Table-driven tlv decoder
-def helper_fromwire_tlv(tlv_table: Dict[str, Tuple[str, Any, Any]],
+def helper_fromwire_tlv(tlv_table: Dict[int, Tuple[str, Any, Any]],
                         buffer: bytes) -> Tuple[Dict[str, Any], Dict[int, bytes]]:
     tlvs = {}
     unknowns = {}
@@ -56,7 +58,7 @@ def helper_fromwire_tlv(tlv_table: Dict[str, Tuple[str, Any, Any]],
     return tlvs, unknowns
 
 
-def tlv_ordered(tlv_table: Dict[str, Tuple[str, Any, Any]],
+def tlv_ordered(tlv_table: Dict[int, Tuple[str, Any, Any]],
                 tlvs: Dict[str, Any], unknowns: Dict[int, bytes],
                 exclude_sigs: bool = False) -> List[Tuple[int, bytes]]:
     """Marshall all entries into bytes, arrange in increasing order"""
@@ -89,7 +91,7 @@ def tlv_enc(num: int, val: bytes) -> bytes:
 
 
 # Table-driven tlv encode
-def helper_towire_tlv(tlv_table: Dict[str, Tuple[str, Any, Any]],
+def helper_towire_tlv(tlv_table: Dict[int, Tuple[str, Any, Any]],
                       tlvs: Dict[str, Any],
                       unknowns: Dict[int, bytes]) -> bytes:
     buffer = bytes()
@@ -99,7 +101,8 @@ def helper_towire_tlv(tlv_table: Dict[str, Tuple[str, Any, Any]],
     return buffer
 
 
-def simple_bech32_decode(bech32str: str) -> Tuple[str, bytes]:
+def simple_bech32_decode(bech32str: str) -> Tuple[Optional[str],
+                                                  Optional[bytes]]:
     """Bech32 decode without a checksum"""
     # We only lower the case if ALL CAPS
     if bech32str.isupper():
@@ -129,7 +132,9 @@ def simple_bech32_decode(bech32str: str) -> Tuple[str, bytes]:
 def simple_bech32_encode(hrp: str, data: bytes) -> str:
     """Bech32 encode without a checksum"""
     encstr = hrp + '1'
-    for c in bech32.convertbits(data, 8, 5, True):
+    bits = bech32.convertbits(data, 8, 5, True)
+    assert bits is not None
+    for c in bits:
         encstr += bech32.CHARSET[c]
     return encstr
 
@@ -278,7 +283,7 @@ period??"""
 
 
 class Bolt12(object):
-    def __init__(self, hrp: str, tlv_table: Dict[str, Tuple[str, Any, Any]], bytestr: bytes):
+    def __init__(self, hrp: str, tlv_table: Dict[int, Tuple[str, Any, Any]], bytestr: bytes):
         self.hrp = hrp
         self.tlv_table = tlv_table
         self.values, self.unknowns = helper_fromwire_tlv(tlv_table, bytestr)
@@ -294,8 +299,9 @@ class Bolt12(object):
 
         raise ValueError('Unknown human readable prefix {}'.format(hrp))
 
+    # FIXME: Returns 'hashlib.HASH'?
     @staticmethod
-    def lnall_ctx(tlv_ordered_nosigs: List[Tuple[int, bytes]]) -> 'hashlib.HASH':
+    def lnall_ctx(tlv_ordered_nosigs: List[Tuple[int, bytes]]) -> Any:
         # BOLT #12:
         # 2. The H(`LnAll`|all-tlvs,tlv) where "all-tlvs" consists of all non-signature TLV entries
         #    appended in ascending order.
@@ -494,6 +500,7 @@ class Decoder(object):
                                                    self.so_far))
         if bytestr is None:
             return None, 'Invalid bech32 string'
+        assert hrp is not None
 
         try:
             ret = Bolt12.create(hrp, bytestr)

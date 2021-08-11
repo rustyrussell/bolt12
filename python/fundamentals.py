@@ -1,5 +1,5 @@
 #! /usr/bin/python3
-from typing import Tuple, Optional
+from typing import Tuple
 
 
 # Fundamental type routines
@@ -16,8 +16,8 @@ def helper_towire_truncated_int(value: int, size: int) -> bytes:
 
 def helper_towire_bytes(value: bytes, size: int) -> bytes:
     if len(value) != size:
-        raise ValueError("value {} should be length {}"
-                         .format(value, size))
+        raise ValueError("value 0x{} should be length {}"
+                         .format(value.hex(), size))
     return value
 
 
@@ -175,10 +175,10 @@ def towire_short_channel_id(value: str) -> bytes:
 
 
 def fromwire_short_channel_id(buffer: bytes) -> Tuple[str, bytes]:
-    intval = fromwire_u64(buffer)
+    intval, buffer = fromwire_u64(buffer)
     return '{}x{}x{}'.format(intval >> 48,
                              (intval >> 24) & 0xFFFFFF,
-                             intval & 0xFFFF)
+                             intval & 0xFFFF), buffer
 
 
 def towire_bigsize(value: int) -> bytes:
@@ -192,7 +192,7 @@ def towire_bigsize(value: int) -> bytes:
         return towire_byte(0xFF) + towire_u64(value)
 
 
-def fromwire_bigsize(buffer: bytes) -> Tuple[Optional[int], bytes]:
+def fromwire_bigsize(buffer: bytes) -> Tuple[int, bytes]:
     val, buffer = fromwire_byte(buffer)
     if val == 0xFD:
         minval = 0xFD
