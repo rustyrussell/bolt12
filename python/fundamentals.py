@@ -1,6 +1,5 @@
 #! /usr/bin/python3
-from typing import Dict, Sequence, Tuple, Optional
-from io import BytesIO
+from typing import Tuple, Optional
 
 
 # Fundamental type routines

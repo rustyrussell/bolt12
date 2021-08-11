@@ -13,7 +13,7 @@ check: check-pytest
 check-source: check-flake8 check-mypy
 
 check-flake8:
-	flake8 --ignore=E501,E731,W503 *.py
+	flake8 --ignore=E501,E731,W503 $(filter-out key.py preamble.py, $(wildcard *.py))
 
 check-pytest: generated.py
 	python3 -m pytest
