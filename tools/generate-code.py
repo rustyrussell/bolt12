@@ -351,14 +351,21 @@ parser = argparse.ArgumentParser(
     description='Generate routines to translate message to/from Lightning wire format'
     )
 parser.add_argument('--output', '-o', help='Where to direct output')
+parser.add_argument('--preamble', help='Prepend this file to the output')
+parser.add_argument('--postamble', help='Append this file to the output')
 parser.add_argument('--language', help='Create routines for this language', default='js')
 parser.add_argument('types', nargs='*', help='Only extract these tags')
+
 
 args = parser.parse_args()
 if args.output is None:
     ofile = sys.stdout
 else:
     ofile = open(args.output, "wt")
+
+if args.preamble:
+    with open(args.preamble, "r") as f:
+        ofile.write(f.read())
 
 # If they don't specify, generate all
 if args.types == []:
@@ -381,3 +388,8 @@ for typename in args.types:
         continue
 
     raise ValueError("Unknown type {}".format(typename))
+
+if args.postamble:
+    with open(args.postamble, "r") as f:
+        ofile.write(f.read())
+
