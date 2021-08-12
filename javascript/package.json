@@ -1,5 +1,5 @@
 {
-  "name": "bolt12",
+  "name": "bolt12-test",
   "version": "0.0.1",
   "description": "Decode bolt12 type address for the lightning networks.",
   "main": "index.js",

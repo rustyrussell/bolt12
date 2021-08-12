@@ -14,7 +14,7 @@
 - [x] javascript/Makefile should generate code -- AS
 - [x] test against lightning-rfc/bolt12/format-string-test.json
 - [x] run test vectors in JS -- AS
-- [ ] write some examples -- AS
+- [x] write some examples -- AS
 - [x] make v0.0.1alpha of NPM -- AS
 - [ ] fetchinvoice creation support, sending via bootstrap.bolt12.org -- AS
 - [ ] Native fetchinvoice -- AS
