@@ -157,7 +157,7 @@ function decode(paymentReq){
     const final={};
     const fin_content={};
     const unknowns={};
-    
+    const tgcode=[]
     final['string']=paymentRequest;
     
     final['type']=type;
@@ -176,6 +176,11 @@ function decode(paymentReq){
         let res=fromwire_bigsize(buffer);
         
         const tagCode=res[0];
+
+        if(tagCode<=tgcode[tgcode.length-1])
+            throw Error('TLVs should be in ascending order!')
+
+        tgcode.push(tagCode);
         
         tlvs.push(Number(''+tagCode));
         
