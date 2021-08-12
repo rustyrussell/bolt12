@@ -7,6 +7,10 @@ const {
 }=require('./gencode.js')
 const sha256 = require('js-sha256');
 const concat = Buffer.concat;
+const {
+    towire_bigsize,
+    fromwire_bigsize,
+}=require('./fundamental_types')
 const ALPHABET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
 const isBech32={};
 const ALPHABET_MAP = {};
@@ -79,45 +83,72 @@ function signature_valid(tlv){
         alltlvs+=tlv[i]
     let merkle_nodes=[]
     for(let i=0;i<tlv.length;i++)merkle_nodes[merkle_nodes.length]=branch_from_tlv(alltlvs,tlv[i])
-    // console.log(alltlvs)
-    // console.log(merkle_nodes)
     while(merkle_nodes.length!=1){
         merkle_nodes=leaves(merkle_nodes)
     }
     return merkle_nodes[0]
 }
-// console.log(tlv_offer[8][1](['1000']))
-function decode(paymentRequest){
-    if (typeof paymentRequest !== 'string') throw new Error('Lightning Payment Request must be string')
-    paymentRequest=paymentRequest.replace('+','')
-    paymentRequest=paymentRequest.replace(' ','')
-    for(let i=0; i<paymentRequest.length; i++){
-        if(!paymentRequest.charAt(i) in isBech32)
-            throw new Error('Not a proper lightning payment request')
+function decode(paymentReq){
+    if (typeof paymentReq !== 'string') 
+        throw new Error('Lightning Payment Request must be string');
+    let paymentRequest='';
+    for(let i=0;i<paymentReq.length;i++){
+        if(paymentReq[i]=='\n'||paymentReq[i]=='\r'){
+            paymentRequest+=' ';
+            continue;
+        }
+        else paymentRequest+=paymentReq[i];
     }
-    if (paymentRequest.slice(0, 2).toLowerCase() !== 'ln') throw new Error('Not a proper lightning payment request')
-    if (paymentRequest.charAt(3)!='1')throw new Error('Separator not present')
-    encodedData=paymentRequest.slice(4)
-    prefix=paymentRequest.slice(0,3)
-    // console.log(encodedData)
+    for(let i=0;i<paymentRequest.length;i++){
+        if(paymentRequest[i]=='+'){
+            let s=i,e;
+            i++;
+            while(i<paymentRequest.length && paymentRequest[i]==' '){
+                i++;
+            }
+            e=i;
+            if(e==paymentRequest.length || s==0 || paymentRequest.charAt(s-1) in isBech32==false || paymentRequest.charAt(e) in isBech32==false)
+                throw new Error('Lightning Payment Request must be string')
+            paymentRequest=paymentRequest.slice(0,s)+paymentRequest.slice(e);
+        }
+    }
+    if(paymentRequest.indexOf(' ')!=-1)
+        throw new Error('Lightning Payment Request must be string');
+    
+    if(paymentRequest!=paymentRequest.toLowerCase()&&paymentRequest!=paymentRequest.toUpperCase())
+        throw new Error('Lightning Payment Request must be string');
+    paymentRequest=paymentRequest.toLowerCase();
+    
+    if (paymentRequest.slice(0, 2) != 'ln') 
+        throw new Error('Not a proper lightning payment request');
+
+    if (paymentRequest.indexOf('1')==-1)
+        throw new Error('Separator not present');
+    
+    encodedData=paymentRequest.slice(paymentRequest.lastIndexOf('1')+1);
+    prefix=paymentRequest.slice(0,paymentRequest.lastIndexOf('1'));
+    
+    for(let i=0; i<encodedData.length; i++){
+        if(encodedData.charAt(i) in isBech32==false)
+            throw new Error('Not a proper lightning pay request');
+    }
     let words=[]
     switch(prefix){
         case "lno":
-            type = "Bolt 12 offer"
+            type = "lno"
             TAGPARSER = tlv_offer
             break;
         case "lnr":
-            type = "Bolt 12 invoice request"
+            type = "lnr"
             TAGPARSER = tlv_invoice_request
             break;
         case "lni":
-            type = "Bolt 12 invoice"
-            TAGPARSERS = tlv_invoice
+            type = "lni"
+            TAGPARSER = tlv_invoice
             break;
-        default:
-        throw new Error('Not a proper lightning payment request')  
+    default:
+        throw new Error(prefix.toString() + ' is not a proper lightning prefix')  
     }
-    // console.log(type)
     for (let i=0;i<encodedData.length;i++){
         words[words.length]=ALPHABET_MAP[encodedData.charAt(i)]
     }
@@ -125,48 +156,73 @@ function decode(paymentRequest){
     const tags = [];
     const final={};
     const fin_content={};
+    const unknowns={};
+    const tgcode=[]
     final['string']=paymentRequest;
+    
     final['type']=type;
+    
     final['valid']='True'//Need to verify offer_ID with signature.
-    const tlv=[];
-    // console.log(TAGPARSER)
-    // console.log(words_8bit)
-    while(words_8bit.length){
-        let tlvs=''
-        const tagCode = words_8bit[0]
-        tlvs += Buffer.from(words_8bit.slice(0,1)).toString('hex')
-        if(tagCode==0){
-            break
-        }
-        tagName = TAGPARSER[tagCode][0]
-        // parser = TAGPARSER[tagCode][2] 
-        words_8bit = words_8bit.slice(1)
-        // console.log(TAGPARSER[tagCode])
-        // console.log(tagCode)
-        if(tagCode=='0'){
-            break
+    
+    buffer= (Buffer.from(words_8bit));
+
+    if(words.length * 5 % 8 != 0){
+        buffer=buffer.slice(0,-1);
+    }
+
+    while(buffer.length){
+        let tlvs=[];
+
+        let res=fromwire_bigsize(buffer);
+        
+        const tagCode=res[0];
+
+        if(tagCode<=tgcode[tgcode.length-1])
+            throw Error('TLVs should be in ascending order!')
+
+        tgcode.push(tagCode);
+        
+        tlvs.push(Number(''+tagCode));
+        
+        buffer=res[1];
+        
+        res=fromwire_bigsize(buffer);
+        
+        tagLength = res[0];
+        
+        tlvs.push(Number(''+tagLength));
+        
+        buffer = res[1];
+        
+        tagWords = buffer.slice(0, Number(''+tagLength));
+
+        
+        if (tagCode in TAGPARSER){
+            tagName=TAGPARSER[tagCode][0];
+            fin_content[tagName] = TAGPARSER[tagCode][2](Buffer.from(tagWords));
         }
         
-    
-        tagLength = words_8bit.slice(0,1)
-        tlvs+=(Buffer.from(tagLength)).toString('hex')
-        words_8bit = words_8bit.slice(1)
-        tagWords = words_8bit.slice(0, tagLength)
-        words_8bit = words_8bit.slice(tagLength)
-        tlvs+=(Buffer.from(tagWords)).toString('hex')
-        if(tagCode<240){
-            tlv[tlv.length]=tlvs
+        else if (tagCode%2==1){
+            unknowns[tagCode]=tagWords;
+            fin_content[tagcode]=tagWords.toString('hex');
         }
-        // console.log(tagCode)
-        // console.log(tagName)
-        // console.log(TAGPARSER[tagCode][2](Buffer.from(tagWords)))
-        fin_content[tagName]=TAGPARSER[tagCode][2](Buffer.from(tagWords))
+
+        else{
+            throw Error('Invalid: Unknown even field number '+tagCode);
+        }
+
+        tlvs.push(tagWords);
+        
+        buffer=buffer.slice(Number(''+tagLength))
+        
+        if(tagCode<240||tagCode>1000)
+            tags.push(Buffer.concat([Buffer.from(tlvs.slice(0,2)),tlvs[2]]).toString('hex'))
     }
-    final['offer_id']=signature_valid(tlv);
     final['contents']=fin_content;
+    final['offer_id']=signature_valid(tags);
     return final;
 }
-// console.log(decode("lno1qcp4256ypqpq86q2pucnq42ngssx2an9wfujqerp0y2pqun4wd68jtn00fkxzcnn9ehhyec6qgqsz83qfwdpl28qqmc78ymlvhmxcsywdk5wrjnj36jryg488qwlrnzyjczlqsp9nyu4phcg6dqhlhzgxagfu7zh3d9re0sqp9ts2yfugvnnm9gxkcnnnkdpa084a6t520h5zhkxsdnghvpukvd43lastpwuh73k29qsy"));
+
 module.exports={
     decode
 }

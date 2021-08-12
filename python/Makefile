@@ -5,7 +5,7 @@ default: generated.py
 TOPDIR := ..
 
 generated.py: $(TOPDIR)/specs/bolt12.csv $(TOPDIR)/specs/bolt4.csv $(TOPDIR)/specs/bolt1.csv preamble.py $(TOPDIR)/tools/generate-code.py
-	(cat preamble.py && ORIGDIR=`pwd` && cd $(TOPDIR) && tools/generate-code.py --language=py) > $@
+	$(TOPDIR)/tools/generate-code.py --preamble=preamble.py --language=py > $@
 
 # FIXME: Add check-source here once code is clean!
 check: check-pytest
