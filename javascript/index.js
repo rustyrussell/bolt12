@@ -83,14 +83,11 @@ function signature_valid(tlv){
         alltlvs+=tlv[i]
     let merkle_nodes=[]
     for(let i=0;i<tlv.length;i++)merkle_nodes[merkle_nodes.length]=branch_from_tlv(alltlvs,tlv[i])
-    // console.log(alltlvs)
-    // console.log(merkle_nodes)
     while(merkle_nodes.length!=1){
         merkle_nodes=leaves(merkle_nodes)
     }
     return merkle_nodes[0]
 }
-// console.log(tlv_offer[8][1](['1000']))
 function decode(paymentReq){
     if (typeof paymentReq !== 'string') 
         throw new Error('Lightning Payment Request must be string');
@@ -115,7 +112,7 @@ function decode(paymentReq){
             paymentRequest=paymentRequest.slice(0,s)+paymentRequest.slice(e);
         }
     }
-    if(paymentRequest.indexOf(' ')!=-1||paymentRequest.indexOf('+')!=-1)
+    if(paymentRequest.indexOf(' ')!=-1)
         throw new Error('Lightning Payment Request must be string');
     
     if(paymentRequest!=paymentRequest.toLowerCase()&&paymentRequest!=paymentRequest.toUpperCase())
@@ -138,15 +135,15 @@ function decode(paymentReq){
     let words=[]
     switch(prefix){
         case "lno":
-            type = "Bolt 12 offer"
+            type = "lno"
             TAGPARSER = tlv_offer
             break;
         case "lnr":
-            type = "Bolt 12 invoice request"
+            type = "lnr"
             TAGPARSER = tlv_invoice_request
             break;
         case "lni":
-            type = "Bolt 12 invoice"
+            type = "lni"
             TAGPARSER = tlv_invoice
             break;
     default:
@@ -160,11 +157,19 @@ function decode(paymentReq){
     const final={};
     const fin_content={};
     const unknowns={};
-    final['string']=paymentRequest;
-    final['type']=type;
-    final['valid']='True'//Need to verify offer_ID with signature.
-    buffer= (Buffer.from(words_8bit))
     
+    final['string']=paymentRequest;
+    
+    final['type']=type;
+    
+    final['valid']='True'//Need to verify offer_ID with signature.
+    
+    buffer= (Buffer.from(words_8bit));
+
+    if(words.length * 5 % 8 != 0){
+        buffer=buffer.slice(0,-1);
+    }
+
     while(buffer.length){
         let tlvs=[];
 
@@ -175,10 +180,6 @@ function decode(paymentReq){
         tlvs.push(Number(''+tagCode));
         
         buffer=res[1];
-        
-        if(tagCode==0){
-            break;        
-        }
         
         res=fromwire_bigsize(buffer);
         
@@ -214,7 +215,7 @@ function decode(paymentReq){
     }
     final['contents']=fin_content;
     final['offer_id']=signature_valid(tags);
-    console.log(final)
+    return final;
 }
 
 module.exports={
