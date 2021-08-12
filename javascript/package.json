@@ -4,6 +4,7 @@
   "description": "Decode bolt12 type address for the lightning networks.",
   "main": "index.js",
   "scripts": {
+    "start":"make gencode.js",
     "test": "make check"
   },
   "repository": {
