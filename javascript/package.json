@@ -1,0 +1,30 @@
+{
+  "name": "bolt12",
+  "version": "0.0.1",
+  "description": "Decode bolt12 type address for the lightning networks.",
+  "main": "index.js",
+  "scripts": {
+    "test": "make check"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rustyrussell/bolt12.git"
+  },
+  "keywords": [
+    "Bolt12",
+    "lightning",
+    "Networks",
+    "bitcoin",
+    "cryptocurrency"
+  ],
+  "author": "Rusty Russell and Aditya Sharma",
+  "license": "ISC",
+  "dependencies": {
+    "js-sha256":"^6.14.5",
+    "assert":"^2.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/rustyrussell/bolt12/issues"
+  },
+  "homepage": "https://github.com/rustyrussell/bolt12#readme"
+}

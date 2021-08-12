@@ -177,8 +177,9 @@ function decode(paymentReq){
         
         const tagCode=res[0];
 
-        if(tagCode<=tgcode[tgcode.length-1])
-            throw Error('TLVs should be in ascending order!')
+        if(tgcode.length>0)
+            if(tagCode<=tgcode[tgcode.length-1])
+                throw Error('TLVs should be in ascending order!');
 
         tgcode.push(tagCode);
         
@@ -216,7 +217,7 @@ function decode(paymentReq){
         buffer=buffer.slice(Number(''+tagLength))
         
         if(tagCode<240||tagCode>1000)
-            tags.push(Buffer.concat([Buffer.from(tlvs.slice(0,2)),tlvs[2]]).toString('hex'))
+            tags.push(Buffer.concat([Buffer.from(tlvs.slice(0,2)),tlvs[2]]).toString('hex'));
     }
     final['contents']=fin_content;
     final['offer_id']=signature_valid(tags);
