@@ -116,7 +116,11 @@ def simple_bech32_decode(bech32str: str) -> Tuple[str, bytes]:
         if pos == -1:
             return None, None
         ret5 += bytes([pos])
-    return hrp, bytes(bech32.convertbits(ret5, 5, 8, False))
+
+    intarr = bech32.convertbits(ret5, 5, 8, False)
+    if intarr is None:
+        return None, None
+    return hrp, bytes(intarr)
 
 
 def simple_bech32_encode(hrp: str, data: bytes) -> str:
@@ -326,6 +330,7 @@ class Decoder(object):
         assert self.complete()
         if self.so_far.startswith('+'):
             return None, 'Missing a part?'
+
         hrp, bytestr = simple_bech32_decode(re.sub(r'([A-Z0-9a-z])\+\s*([A-Z0-9a-z])', r'\1\2',
                                                    self.so_far))
         if bytestr is None:
