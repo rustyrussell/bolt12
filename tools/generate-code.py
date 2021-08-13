@@ -50,11 +50,11 @@ def generate_towire_field(field, allfields, lang):
                 assert f.fieldtype.elemtype.name != 'utf8'
 
         if lang == 'js':
-            print('    buf = Buffer.concat([buf, towire_{ftype}(value[{lenfield}].length)]);\n'
+            print('    buf = Buffer.concat([buf, towire_{ftype}(value["{lenfield}"].length)]);\n'
                   .format(ftype=field.fieldtype.underlying_type.name,
                           lenfield=field.fieldtype.len_for[0].name), file=ofile)
         elif lang == 'py':
-            print('    buf += towire_{ftype}(len(value[{lenfield}]))'
+            print('    buf += towire_{ftype}(len(value["{lenfield}"]))'
                   .format(ftype=field.fieldtype.underlying_type.name,
                           lenfield=field.fieldtype.len_for[0].name), file=ofile)
     else:
@@ -179,7 +179,7 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
                   .format(tlvname=tlvtype.name, fname=f.name),
                   file=ofile)
         elif lang == 'py':
-            print('def towire_{tlvname}_{fname}(value):\n'
+            print('\n\ndef towire_{tlvname}_{fname}(value):\n'
                   '    _n = 0\n'
                   '    buf = bytes()'
                   .format(tlvname=tlvtype.name, fname=f.name),
@@ -203,7 +203,7 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
         elif lang == 'py':
             print('    # Ensures there are no extra keys!\n'
                   '    assert len(value) == _n\n'
-                  '    return buf\n', file=ofile)
+                  '    return buf', file=ofile)
 
         if lang == 'js':
             print('function fromwire_{tlvname}_{fname}(buffer)\n'
@@ -213,7 +213,7 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
                   '    value = {{}};'
                   .format(tlvname=tlvtype.name, fname=f.name), file=ofile)
         elif lang == 'py':
-            print('def fromwire_{tlvname}_{fname}(buffer):\n'
+            print('\n\ndef fromwire_{tlvname}_{fname}(buffer):\n'
                   '    value = {{}}'
                   .format(tlvname=tlvtype.name, fname=f.name), file=ofile)
         for subf in f.fields:
@@ -227,7 +227,7 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
                       '}}\n'.format(fname=singleton.name), file=ofile)
             elif lang == 'py':
                 print('\n'
-                      '    return value["{fname}"], buffer\n'
+                      '    return value["{fname}"], buffer'
                       .format(fname=singleton.name),
                       file=ofile)
         else:
@@ -237,17 +237,17 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
                       '}\n', file=ofile)
             elif lang == 'py':
                 print('\n'
-                      '    return value, buffer\n', file=ofile)
+                      '    return value, buffer', file=ofile)
 
     # Now, generate table
     if lang == 'js':
         print('const tlv_{} = {{'.format(tlvtype.name), file=ofile)
     elif lang == 'py':
-        print('tlv_{} = {{'.format(tlvtype.name), file=ofile)
+        print('\n\ntlv_{} = {{'.format(tlvtype.name), file=ofile)
     for f in tlvtype.fields:
-        print('    {num}: [ "{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname} ],'
+        print('    {num}: ["{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname}],'
               .format(num=f.number, tlvname=tlvtype.name, fname=f.name), file=ofile)
-    print('}\n', file=ofile)
+    print('}', file=ofile)
 
 
 def generate_msgtype(name: str, lang):
@@ -258,7 +258,7 @@ def generate_msgtype(name: str, lang):
               '    let buf = Buffer.alloc(0);'
               .format(tlvname=name.name), file=ofile)
     elif lang == 'py':
-        print('def towire_{tlvname}(value):\n'
+        print('\n\ndef towire_{tlvname}(value):\n'
               '    _n = 0\n'
               '    buf = bytes()'
               .format(tlvname=name.name), file=ofile)
@@ -277,8 +277,8 @@ def generate_msgtype(name: str, lang):
               .format(tlvname=name.name), file=ofile)
     elif lang == 'py':
         print('    assert len(value) == _n\n'
-              '    return buf\n', file=ofile)
-        print('def fromwire_{tlvname}(buffer):\n'
+              '    return buf', file=ofile)
+        print('\n\ndef fromwire_{tlvname}(buffer):\n'
                '    value = {{}}'
               .format(tlvname=name.name), file=ofile)
     for f in name.fields:
@@ -289,7 +289,7 @@ def generate_msgtype(name: str, lang):
               '}\n', file=ofile)
     elif lang == 'py':
         print('\n'
-              '    return value, buffer\n', file=ofile)
+              '    return value, buffer', file=ofile)
 
 
 def generate_subtype(name: str, lang):
@@ -300,7 +300,7 @@ def generate_subtype(name: str, lang):
               '    let buf = Buffer.alloc(0);'
               .format(tlvname=name.name), file=ofile)
     elif lang == 'py':
-        print('def towire_{tlvname}(value):\n'
+        print('\n\ndef towire_{tlvname}(value):\n'
               '    _n = 0\n'
               '    buf = bytes()'
               .format(tlvname=name.name), file=ofile)
@@ -318,8 +318,8 @@ def generate_subtype(name: str, lang):
               .format(tlvname=name.name), file=ofile)
     elif lang == 'py':
         print('    assert len(value) == _n\n'
-              '    return buf\n', file=ofile)
-        print('def fromwire_{tlvname}(buffer):\n'
+              '    return buf', file=ofile)
+        print('\n\ndef fromwire_{tlvname}(buffer):\n'
               '    value = {{}}'
               .format(tlvname=name.name), file=ofile)
     for f in name.fields:
@@ -331,7 +331,7 @@ def generate_subtype(name: str, lang):
               '}\n', file=ofile)
     elif lang == 'py':
         print('\n'
-              '    return value, buffer\n', file=ofile)
+              '    return value, buffer', file=ofile)
 
 
 # We need types from bolt 4.
