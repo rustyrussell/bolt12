@@ -6,6 +6,9 @@
 - [ ] publish python library v0.0.1alpha -- RR
 - [x] move test vectors as JSON -- RR
 - [x] write some examples --RR
+- [x] check() for offers -- RR
+- [ ] check() for invoice_request -- RR
+- [ ] check() for invoices -- RR
 
 ## JavaScript
 
@@ -17,6 +20,11 @@
 - [x] write some examples -- AS
 - [x] make v0.0.1alpha of NPM -- AS
 - [ ] fetchinvoice creation support, sending via bootstrap.bolt12.org -- AS
+- [ ] Check signatures -- AS
+- [ ] check() for offers -- AS
+- [ ] check() for invoice_request -- AS
+- [ ] check() for invoices -- AS
+- [ ] Implement recurrence class -- AS
 - [ ] Native fetchinvoice -- AS
     - [ ] connect via ws to LN node. -- AS
     - [ ] Implement Noise NK protocol as per BOLT 8 -- AS
