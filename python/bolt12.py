@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 from typing import Tuple, Optional, Dict, Any, Sequence, List
 import bech32
 from datetime import datetime, timezone

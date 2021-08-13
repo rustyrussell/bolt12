@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 import pyln.proto.message
 from pyln.proto.message.fundamental_types import FundamentalHexType, IntegerType
 import argparse
