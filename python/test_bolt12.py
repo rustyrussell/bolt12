@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 import bolt12
 import json
+import time
 
 # Grab offers testvector
 with open("../test-vectors/offers.json", "r") as f:
@@ -16,6 +17,10 @@ for offer in testoffers:
 
 with open("../lightning-rfc/bolt12/format-string-test.json", "r") as f:
     test_formatstrings = json.loads(f.read())
+
+
+with open("../lightning-rfc/bolt12/offer-period-test.json", "r") as f:
+    test_periods = json.loads(f.read())
 
     
 def test_decode_formats():
@@ -97,3 +102,117 @@ def test_check():
         assert d.add(offer['string'])
         b12, _ = d.result()
         assert b12.check()
+
+
+def test_recurrence():
+    for period in test_periods:
+        rvals = {'time_unit': period['time_unit'],
+               'period': period['period']}
+        base = {'basetime': period["basetime"],
+                'start_any_period': 0}
+        rec = bolt12.Recurrence(rvals, recurrence_base=base)
+        assert rec.get_period(period["n"]).start == period["expect"]["seconds_since_epoch"]
+
+    for offer in testoffers:
+        d = bolt12.Decoder()
+        assert d.add(offer['string'])
+        b12, _ = d.result()
+        rec = b12.get_recurrence()
+        if 'recurrence' not in offer['contents']:
+            assert rec is None
+        else:
+            timenow = int(time.time())
+            jan2021 = 1609459200
+            jan2022 = 1640995200
+            # 50 days after 2021-01-1 = 2021-02-20
+            feb2021_20 = 1613779200
+            # FIXME: Put this in vectors
+            desc = offer['contents']['description']
+            if desc == "100msat every minute":
+                assert not rec.has_fixed_base()
+                assert (rec.get_period(0, basetime=timenow)
+                        == (timenow, timenow + 60,
+                            timenow - 60, timenow + 60))
+                assert (rec.get_period(3, basetime=timenow)
+                        == (timenow + 180, timenow + 180 + 60,
+                            timenow + 180 - 60, timenow + 180 + 60))
+            elif desc == "100msat every minute, up to three times":
+                assert not rec.has_fixed_base()
+                assert (rec.get_period(0, basetime=timenow)
+                        == (timenow, timenow + 60, timenow - 60, timenow + 60))
+                assert rec.get_period(3, basetime=timenow) is None
+            elif desc == "100msat every day, from 1-Jan-2021":
+                assert rec.has_fixed_base()
+                assert (rec.get_period(0)
+                        == (jan2021, jan2021 + 3600*24,
+                            jan2021 - 3600*24, jan2021 + 3600*24))
+                assert (rec.get_period(365)
+                        == (jan2022, jan2022 + 3600*24,
+                            jan2022 - 3600*24, jan2022 + 3600*24))
+            elif desc == "1000msat every 10 days, from 1-Jan-2021, pay 1hr before to 60 seconds late":
+                assert rec.has_fixed_base()
+                assert (rec.get_period(0)
+                        == (jan2021, jan2021 + 3600*24 * 10,
+                            jan2021 - 3600, jan2021 + 60))
+                assert (rec.get_period(5)
+                        == (feb2021_20, feb2021_20 + 3600*24*10,
+                            feb2021_20 - 3600, feb2021_20 + 60))
+            elif desc == "1000msat every 10 days, from 1-Jan-2021, pro-rata":
+                assert rec.has_fixed_base()
+                assert (rec.get_period(0)
+                        == (jan2021, jan2021 + 3600*24 * 10,
+                            jan2021 - 10*3600*24, jan2021 + 3600*24 * 10))
+                assert (rec.get_period(5)
+                        == (feb2021_20, feb2021_20 + 3600*24*10,
+                            feb2021_20 - 10*3600*24, feb2021_20 + 3600*24*10))
+                # Proportional amounts apply within the period window
+                assert rec.get_pay_factor(rec.get_period(5),
+                                          feb2021_20 - 1) == 1
+                assert rec.get_pay_factor(rec.get_period(5),
+                                          feb2021_20) == 1
+                assert rec.get_pay_factor(rec.get_period(5),
+                                          feb2021_20 + 5*3600*24) == 0.5
+                assert rec.get_pay_factor(rec.get_period(5),
+                                          feb2021_20 + 10*3600*24) == 0
+                assert rec.get_pay_factor(rec.get_period(5),
+                                          feb2021_20 + 10*3600*24 + 1) == 0
+            elif desc == "10USD every day":
+                assert not rec.has_fixed_base()
+                assert (rec.get_period(0, basetime=timenow)
+                        == (timenow, timenow + 24*60*60,
+                            timenow - 24*60*60, timenow + 24*60*60))
+                assert (rec.get_period(3, basetime=timenow)
+                        == (timenow + 24*60*180,
+                            timenow + 24*60*180 + 24*60*60,
+                            timenow + 24*60*180 - 24*60*60,
+                            timenow + 24*60*180 + 24*60*60))
+            else:
+                # If a new test case added, handle it here.
+                assert False
+
+
+def test_recurrence_period_start_offset():
+    for time_unit in (0, 1, 2, 3):
+        # Every 10 time_unit from 1-Jan-2021
+        jan2021 = 1609459200
+        rec = bolt12.Recurrence({'time_unit': time_unit, 'period': 10},
+                                recurrence_base={'start_any_period': True,
+                                                 'basetime': jan2021})
+
+        # We replace _get_period to count iterations inside period_start_offset.
+        rec.real_get_period = rec._get_period
+        def counting_get_period(n: int, basetime: int):
+            rec.iterations += 1
+            return rec.real_get_period(n, basetime)
+        rec._get_period = counting_get_period
+
+        # Try ranges back and forward about a century.
+        for when in range(jan2021 - 500000000,
+                          jan2021 + 500000000,
+                          500000):
+            rec.iterations = 0
+            which_period = rec.period_start_offset(when)
+            assert rec.iterations > 0
+            assert rec.iterations <= 2
+            start, end, _, _ = rec._get_period(which_period, 1609459200)
+            assert when >= start and when < end
