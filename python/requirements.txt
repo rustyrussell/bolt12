@@ -1,2 +1,2 @@
-pyln.proto.message
+pyln-proto
 python-dateutil
