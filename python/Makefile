@@ -3,9 +3,11 @@
 default: generated.py
 
 TOPDIR := ..
+# You may need to override this with PYTHON=python3 on the cmdline!
+PYTHON := python
 
 generated.py: $(TOPDIR)/specs/bolt12.csv $(TOPDIR)/specs/bolt4.csv $(TOPDIR)/specs/bolt1.csv preamble.py $(TOPDIR)/tools/generate-code.py
-	$(TOPDIR)/tools/generate-code.py --preamble=preamble.py --language=py > $@
+	$(PYTHON) $(TOPDIR)/tools/generate-code.py --preamble=preamble.py --language=py > $@
 
 # FIXME: Add check-source here once code is clean!
 check: check-pytest
