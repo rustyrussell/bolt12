@@ -245,8 +245,12 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
     elif lang == 'py':
         print('\n\ntlv_{} = {{'.format(tlvtype.name), file=ofile)
     for f in tlvtype.fields:
-        print('    {num}: ["{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname}],'
-              .format(num=f.number, tlvname=tlvtype.name, fname=f.name), file=ofile)
+        if lang == 'js':
+            print('    {num}: ["{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname}],'
+                  .format(num=f.number, tlvname=tlvtype.name, fname=f.name), file=ofile)
+        elif lang == 'py':
+            print('    {num}: ("{fname}", towire_{tlvname}_{fname}, fromwire_{tlvname}_{fname}),'
+                  .format(num=f.number, tlvname=tlvtype.name, fname=f.name), file=ofile)
     print('}', file=ofile)
 
 
