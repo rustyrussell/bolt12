@@ -171,6 +171,7 @@ period??"""
             # BOLT #12:
             # - if the day is not within the month, use the last day within
             #   the month.
+
             # Try one day earlier as a base
             basedate -= relativedelta(days=1)
 
@@ -382,8 +383,8 @@ class Bolt12(object):
         return sign_schnorr(privkey, hash)
 
     # BOLT #9:
-    # | 8/9   | `var_onion_optin` ... | IN9 |
-    # | 14/15 | `payment_secret` ... | IN9 |
+    # | 8/9   | `var_onion_optin` ... | IN9 |...
+    # | 14/15 | `payment_secret` ... | IN9 |...
     # | 16/17 | `basic_mpp` ... | IN9 |
     known_features = {8: 'var_onion_optin',
                       14: 'payment_secret',
