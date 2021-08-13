@@ -1,8 +1,6 @@
 #! /usr/bin/python3
-from typing import Tuple, Optional, Dict, Any, Sequence, Callable, List
-from io import BytesIO
+from typing import Tuple, Optional, Dict, Any, Sequence, List
 import bech32
-import calendar
 from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 from collections import namedtuple
@@ -13,13 +11,13 @@ import time
 from fundamentals import fromwire_bigsize, towire_bigsize
 from key import verify_schnorr, sign_schnorr
 
+
 # BOLT #12:
 # All signatures are created as per
 # [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki),
 # and tagged as recommended there.  Thus we define H(`tag`,`msg`) as
 # SHA256(SHA256(`tag`) || SHA256(`tag`) || `msg`), and SIG(`tag`,`msg`,`key`)
 # as the signature of H(`tag`,`msg`) using `key`.
-
 def bolt12_h(tag: bytes, data: bytes = bytes()) -> 'hashlib.HASH':
     tag_sha = hashlib.sha256(tag).digest()
     ret = hashlib.sha256(tag_sha + tag_sha)
@@ -58,7 +56,6 @@ def helper_fromwire_tlv(tlv_table: Dict[str, Tuple[str, Any, Any]],
     return tlvs, unknowns
 
 
-
 def tlv_ordered(tlv_table: Dict[str, Tuple[str, Any, Any]],
                 tlvs: Dict[str, Any], unknowns: Dict[int, bytes],
                 exclude_sigs: bool = False) -> List[Tuple[int, bytes]]:
@@ -89,7 +86,8 @@ def tlv_ordered(tlv_table: Dict[str, Tuple[str, Any, Any]],
 
 def tlv_enc(num: int, val: bytes) -> bytes:
     return towire_bigsize(num) + towire_bigsize(len(val)) + val
-    
+
+
 # Table-driven tlv encode
 def helper_towire_tlv(tlv_table: Dict[str, Tuple[str, Any, Any]],
                       tlvs: Dict[str, Any],
@@ -116,7 +114,7 @@ def simple_bech32_decode(bech32str: str) -> Tuple[str, bytes]:
         return None, None
 
     ret5 = bytes()
-    for c in bech32str[sep+1:]:
+    for c in bech32str[sep + 1:]:
         pos = bech32.CHARSET.find(c)
         if pos == -1:
             return None, None
@@ -265,7 +263,7 @@ period??"""
             approx_mul = 30 * 24 * 60 * 60
         elif self.time_unit == 3:
             approx_mul = 365 * 30 * 24 * 60 * 60
-        
+
         period_num = ((when - self.base['basetime'])
                       // (self.period * approx_mul))
 
@@ -278,7 +276,7 @@ period??"""
             else:
                 return period_num
 
-    
+
 class Bolt12(object):
     def __init__(self, hrp: str, tlv_table: Dict[str, Tuple[str, Any, Any]], bytestr: bytes):
         self.hrp = hrp
@@ -384,6 +382,7 @@ class Bolt12(object):
     known_features = {8: 'var_onion_optin',
                       14: 'payment_secret',
                       16: 'basic_mpp'}
+
     @staticmethod
     def check_features(featureset: bytes) -> Optional[str]:
         """Returns None if OK, otherwise the complaint"""
@@ -394,7 +393,7 @@ class Bolt12(object):
         for i in range(0, len(featureset) * 8, 2):
             # Big-endian bitfields are the *worst*
             byte = int(featureset[len(featureset) - 1 - i // 8])
-            if byte & (1 << (i%8)) and i not in known_features:
+            if byte & (1 << (i % 8)) and i not in Bolt12.known_features:
                 return "Unsupported required feature {}".format(i)
         return None
 
@@ -457,6 +456,7 @@ class Offer(Bolt12):
                           self.values.get('recurrence_paywindow'),
                           self.values.get('recurrence_limit'),
                           self.values.get('recurrence_base'))
+
 
 class InvoiceRequest(Bolt12):
     """Class for an invoice_request"""
