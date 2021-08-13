@@ -9,8 +9,7 @@ PYTHON := python
 generated.py: $(TOPDIR)/specs/bolt12.csv $(TOPDIR)/specs/bolt4.csv $(TOPDIR)/specs/bolt1.csv preamble.py $(TOPDIR)/tools/generate-code.py
 	$(PYTHON) $(TOPDIR)/tools/generate-code.py --preamble=preamble.py --language=py > $@
 
-# FIXME: Add check-source here once code is clean!
-check: check-pytest
+check: check-pytest check-source
 
 check-source: check-flake8 check-mypy
 
