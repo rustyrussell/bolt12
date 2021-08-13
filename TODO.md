@@ -5,7 +5,7 @@
 - [ ] finish python library -- RR
 - [ ] publish python library v0.0.1alpha -- RR
 - [x] move test vectors as JSON -- RR
-- [ ] write some examples --RR
+- [x] write some examples --RR
 
 ## JavaScript
 
