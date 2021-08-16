@@ -338,10 +338,30 @@ def generate_subtype(name: str, lang):
               '    return value, buffer', file=ofile)
 
 
+parser = argparse.ArgumentParser(
+    description='Generate routines to translate message to/from Lightning wire format'
+    )
+parser.add_argument('--output', '-o', help='Where to direct output')
+parser.add_argument('--preamble', help='Prepend this file to the output')
+parser.add_argument('--postamble', help='Append this file to the output')
+parser.add_argument('--language', help='Create routines for this language', default='js')
+parser.add_argument('--spec', help='Use these spec CSV files', action='append', default=['../specs/bolt4.csv', '../specs/bolt12.csv'])
+parser.add_argument('types', nargs='*', help='Only extract these tags')
+
+args = parser.parse_args()
+if args.output is None:
+    ofile = sys.stdout
+else:
+    ofile = open(args.output, "wt")
+
+if args.preamble:
+    with open(args.preamble, "r") as f:
+        ofile.write(f.read())
+
 # We need types from bolt 4.
 csv_lines = []
-for boltnum in (4, 12):
-    with open('../specs/bolt{}.csv'.format(boltnum), 'r') as f:
+for specfile in args.spec:
+    with open(specfile, 'r') as f:
         csv_lines += f.read().split()
 
 ns = pyln.proto.message.MessageNamespace()
@@ -355,26 +375,6 @@ if not 'bip340sig' in ns.fundamentaltypes:
     ns.fundamentaltypes['bip340sig'] = FundamentalHexType('bip340sig', 32)
 
 ns.load_csv(csv_lines)
-
-parser = argparse.ArgumentParser(
-    description='Generate routines to translate message to/from Lightning wire format'
-    )
-parser.add_argument('--output', '-o', help='Where to direct output')
-parser.add_argument('--preamble', help='Prepend this file to the output')
-parser.add_argument('--postamble', help='Append this file to the output')
-parser.add_argument('--language', help='Create routines for this language', default='js')
-parser.add_argument('types', nargs='*', help='Only extract these tags')
-
-
-args = parser.parse_args()
-if args.output is None:
-    ofile = sys.stdout
-else:
-    ofile = open(args.output, "wt")
-
-if args.preamble:
-    with open(args.preamble, "r") as f:
-        ofile.write(f.read())
 
 # If they don't specify, generate all
 if args.types == []:
