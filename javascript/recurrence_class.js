@@ -37,7 +37,9 @@ class Recurrence{
         }
     }
     _get_period(n, basetime){
-        basedate=new Date(basetime);
+        var basedate=new Date();
+        basedate.setTime(basetime*1000)
+        // console.log(basedate.toUTCString());
         if (this.time_unit==0){
             var units = 'seconds';
             var sameday = false;
@@ -55,35 +57,38 @@ class Recurrence{
             var sameday = true;
         }
         
-        var startdate = this._adjust_date(basedate, units, this.period*n, sameday);
-        var enddate = this._adjust_date(startdate, units, this.period, sameday);
-
+        var startdate = new Date();
+        startdate.setTime( this._adjust_date(basedate, units, this.period*(n), sameday));
+        var enddate = new Date();
+        enddate.setTime( this._adjust_date(startdate, units, this.period, sameday));
+        console.log(enddate.toUTCString());
         var start = startdate.getTime();
         var end = enddate.getTime();
 
         if(this.paywindow==null){
-            paystartdate = this._adjust_date(startdate, units, -this.period, 
+            var paystartdate = this._adjust_date(startdate, units, -this.period, 
                                             sameday);
-            paystart=paystartdate.getTime();
-            payend=end;
+            console.log('paystart:', paystartdate.toUTCString());
+            var paystart=paystartdate.getTime();
+            var payend=end;
         }
         else{
-            paystart = start-this.paywindow['seconds_before'];
-            payend = start + this.paywindow['seconds_after'];
+            var paystart = start - this.paywindow['seconds_before'];
+            var payend = start + this.paywindow['seconds_after'];
         }
         return {
-                'start': start,
-                'end': end, 
-                'paystart':paystart, 
-                'payend':payend
+                'start': start/1000,
+                'end': end/1000, 
+                'paystart':paystart/1000, 
+                'payend':payend/1000
                 }
     }
-    get_period(n, basetime){
-        if (this.limit!=null && n>this.limit){
+    get_period(n){
+        if (this.limit!=null && n>this.limit && n<=0){
             return null;
         }
         if (this.base!=null){
-            basetime=this.base['basetime'];
+            var basetime=this.base['basetime'];
         }
         return this._get_period(n, basetime);
     }
@@ -96,28 +101,36 @@ class Recurrence{
             return 0;
         return (period['end']-time)/period['end']-period['start'];
     }
-    period_start_offset(){
-        
+    period_start_offset(when){
+        if(this.can_start_offset){
+            if (this.time_unit==0){
+                var approx_mul = 1;
+            }
+            else if (this.time_unit==1){
+                var approx_mul = 24 * 60 * 60;
+            }
+            else if (this.time_unit==2){
+                var approx_mul = 30 * 24 * 60 * 60;
+            }
+            else if (this.time_unit==3){
+                var approx_mul = 365 * 30 * 24 * 60 * 60;
+            }
+            var period_num=(when-self.base['basetime'])/(self.period * approx_mul)
+            while (true){
+                period = self._get_period(period_num, self.base['basetime']);
+                if(when < period['end']){
+                    period_num -= 1;
+                }
+                else if (when >= this.period.end){
+                    period_num += 1;
+                }
+                else{
+                    return period_num;
+                }
+            }
+        }
+        else throw Error('can_start_offset is not true');
     }
 } 
-var d = new Date(0);
-console.log(d);
-var ret=new Date(d);
-console.log(ret);
-// var res=new Date();
-
-// d.setDate(d.getDate()-1)
-// console.log(res);
-
-
-// let recurrence={
-//     'period':56,
-//     'time_unit':0
-// }
-// let test=new Recurrence(recurrence);
-// test.has_fixed_base()
-// var test=new Date(1456740100000);
-// var basedate=new Date(2021,2,14);
-// var ret=new Date(1970,1,1)
-// // ret=ret.setTime(basedate.getTime()+(24*60*60*1000))
-// console.log(ret.toUTCString())
+// var recur=new Recurrence({'period':10,'time_unit':0},null,1,{'basetime':31485600, 'start_any_perriod':0});
+// console.log(recur.get_period(1))
