@@ -6,6 +6,7 @@ const {
     tlv_invoice_error
 }=require('./gencode.js')
 const sha256 = require('js-sha256');
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const concat = Buffer.concat;
 const {
     towire_bigsize,
@@ -357,7 +358,7 @@ function decode(paymentReq){
     return final;
 }
 function get_recurrence(address){
-    decoded=decode(address);
+    let decoded=decode(address);
     if (!'recurrence' in decoded['contents']){
         return null;
     }
@@ -370,7 +371,47 @@ function get_recurrence(address){
         return recur;
     }
 }
+function fetch_invoice(address){
+    let request= new XMLHttpRequest();
+    let decoded=decode(address);
+    console.log(decoded)
+    if( 'amount' in decoded['contents']){
+        let link='https://bootstrap.bolt12.org/fetchinvoice/'+address+'/100/2';
+        console.log(link)
+        request.open('GET',link);
+        request.send();
+        request.resposeType='json'
+        request.onload=()=>{
+            if(request.status==200){
+                console.log(JSON.parse(request.responseText));
+            }
+            else{
+                console.log(`error ${request.status} ${request.statusText}`);
+            }
+        }
+    }
+}
+fetch_invoice('lno1pqqnyzsmx5cx6umpwssx6atvw35j6ut4v9h8g6t50ysx7enxv4epgrmjw4ehgcm0wfczucm0d5hxzagkqyq3ugztng063cqx783exlm97ekyprnd4rsu5u5w5sez9fecrhcuc3ykqhcypjju7unu05vav8yvhn27lztf46k9gqlga8uvu4uq62kpuywnu6me8srgh2q7puczukr8arectaapfl5d4rd6uc7st7tnqf0ttx39n40s')
 module.exports={
     decode,
     get_recurrence
 }
+
+//SIGNATURE VERIFICATION
+// var schnorr = require("bip-schnorr")
+// const sha256 = require('js-sha256');
+// var recur=new Recurrence({'period':10,'time_unit':0},null,1,{'basetime':31485600, 'start_any_perriod':0});
+// console.log(recur.get_period(1))
+// function hash(buffer) {
+//     return Buffer.from(sha256.create().update(buffer).array());
+// }
+// function taggedHash(tag, msg) {
+//     const tagHash = hash(tag);
+//     return hash(Buffer.concat([tagHash, tagHash, Buffer.from(msg,'hex')]));
+// }
+// hash = taggedHash(Buffer.from('lightningoffersignature'),'28522b52ac39fa518ce3a5b3e4a9a96372487e78ba5eb1540ec4d9f02ca82718');
+// if (schnorr.verify(Buffer.from('4b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605','hex'),hash,Buffer.from('f4c5b54263766d8aa86dcb28b9973449cf995ef58ce8a96430bbb5b516460f465e9794b6842f1260b400966a3eb7e1557998f858aeb5bce1459ebc984fa3cabb','hex'))){
+//     console.log('i am here');
+// }
+// else console.log('fucked');
+// console.log(Buffer.from('28522b52ac39fa518ce3a5b3e4a9a96372487e78ba5eb1540ec4d9f02ca82718','hex'));
