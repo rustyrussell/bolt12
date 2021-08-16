@@ -101,8 +101,7 @@ def helper_towire_tlv(tlv_table: Dict[int, Tuple[str, Any, Any]],
     return buffer
 
 
-def simple_bech32_decode(bech32str: str) -> Tuple[Optional[str],
-                                                  Optional[bytes]]:
+def simple_bech32_decode(bech32str: str) -> Tuple[str, bytes]:
     """Bech32 decode without a checksum"""
     # We only lower the case if ALL CAPS
     if bech32str.isupper():
@@ -110,22 +109,22 @@ def simple_bech32_decode(bech32str: str) -> Tuple[Optional[str],
 
     sep = bech32str.find('1')
     if sep == -1:
-        return None, None
+        raise ValueError("No separator found")
 
     hrp = bech32str[:sep]
     if not hrp.islower():
-        return None, None
+        raise ValueError("Mixed case found")
 
     ret5 = bytes()
     for c in bech32str[sep + 1:]:
         pos = bech32.CHARSET.find(c)
         if pos == -1:
-            return None, None
+            raise ValueError("Invalid character '{}'".format(c))
         ret5 += bytes([pos])
 
     intarr = bech32.convertbits(ret5, 5, 8, False)
-    if intarr is None:
-        return None, None
+    # Can't fail, since we ensured all values are 0-31 above!
+    assert intarr is not None
     return hrp, bytes(intarr)
 
 
@@ -497,11 +496,11 @@ class Decoder(object):
         if self.so_far.startswith('+'):
             return None, 'Missing a part?'
 
-        hrp, bytestr = simple_bech32_decode(re.sub(r'([A-Z0-9a-z])\+\s*([A-Z0-9a-z])', r'\1\2',
-                                                   self.so_far))
-        if bytestr is None:
-            return None, 'Invalid bech32 string'
-        assert hrp is not None
+        try:
+            hrp, bytestr = simple_bech32_decode(re.sub(r'([A-Z0-9a-z])\+\s*([A-Z0-9a-z])', r'\1\2',
+                                                       self.so_far))
+        except ValueError as e:
+            return None, ' '.join(e.args)
 
         try:
             ret = Bolt12.create(hrp, bytestr)
