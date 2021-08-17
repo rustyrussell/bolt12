@@ -34,6 +34,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install 'pyln-proto >= 0.10.1' 'python-dateutil >= 2.8.2' 'bech32 >= 1.2.0'
           npm install js-sha256
+          npm install bip-schnorr
       - name: Build and check
         run: |
           make -C javascript check
