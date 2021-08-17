@@ -1,6 +1,6 @@
 {
   "name": "bolt12-test",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Decode bolt12 type address for the lightning networks.",
   "main": "index.js",
   "scripts": {
@@ -23,7 +23,7 @@
   "dependencies": {
     "js-sha256":"^6.14.5",
     "assert":"^2.0.0",
-    "bip-schnorr":"0.6.3"
+    "bip-schnorr":"^0.6.3"
   },
   "bugs": {
     "url": "https://github.com/rustyrussell/bolt12/issues"
