@@ -197,7 +197,7 @@ def generate_tlvtype(tlvtype: 'TlvMessageType', lang):
         for subf in f.fields:
             generate_towire_field(subf, f.fields, lang)
         if lang == 'js':
-            print('    assert(value.length == _n);\n'
+            print('    assert(Object.keys(value).length == _n);\n'
                   '    return buf;\n'
                   '}\n', file=ofile)
         elif lang == 'py':

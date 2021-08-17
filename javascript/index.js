@@ -1,3 +1,16 @@
+var assert = require('assert');
+const schnorr = require('bip-schnorr');
+// try{
+//     schnorr.verify(
+//         Buffer.from('4b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605','hex'),
+//         Buffer.from('7c46ea1038c1ba1d6c8d731cbb6b1e63d369d95a832a2081258b0a663adf78f3','hex'),
+//         Buffer.from('f4c5b54263766d8aa86dcb28b9973449cf995ef58ce8a96430bbb5b516460f465e9794b6842f1260b400966a3eb7e1557998f858aeb5bce1459ebc984fa3cabb','hex')
+//     )
+//     console.log('done!')
+// }
+// catch (e){
+//     console.log('fucked')
+// }
 const {
     tlv_tlv_payload,
     tlv_offer,
@@ -155,6 +168,7 @@ for (let z = 0; z < ALPHABET.length; z++) {
     isBech32[x]=true;
 }
 
+
 function hash(buffer) {
     return Buffer.from(sha256.create().update(buffer).array());
 }
@@ -163,7 +177,8 @@ function taggedHash(tag, msg) {
     const tagHash = hash(tag);
     return hash(concat([tagHash, tagHash, Buffer.from(msg,'hex')]));
 }
-
+console.log(taggedHash( Buffer.from('lightningoffersignature'),
+                '28522b52ac39fa518ce3a5b3e4a9a96372487e78ba5eb1540ec4d9f02ca82718').toString('hex'))
 function convert (data, inBits, outBits) {
     let value = 0
     let bits = 0
@@ -211,7 +226,21 @@ function branch_from_tlv(alltlv, tlv){
     greaterSHA256=l>lnonce?l:lnonce
     return taggedHash(Buffer.from('LnBranch'),smallerSHA256+greaterSHA256).toString('hex')
 }
-function signature_valid(tlv){
+function check_sign(msgname, merkle_root, pubkey32, bip340sig){
+    let msg=taggedHash(Buffer.from('lightning'+msgname+'signature'),merkle_root).toString('hex');
+    try{
+        schnorr.verify(
+            Buffer.from(pubkey32,'hex'),
+            Buffer.from(msg,'hex'),
+            Buffer.from(bip340sig,'hex')
+        )
+        return 'true';
+    }
+    catch(e){
+        return 'false';
+    }
+}
+function merkle_calc(tlv){
     let alltlvs=''
     for(let i=0;i<tlv.length;i++)
         alltlvs+=tlv[i]
@@ -296,8 +325,6 @@ function decode(paymentReq){
     
     final['type']=type;
     
-    final['valid']='True'//Need to verify offer_ID with signature.
-    
     buffer= (Buffer.from(words_8bit));
 
     if(words.length * 5 % 8 != 0){
@@ -337,7 +364,7 @@ function decode(paymentReq){
             fin_content[tagName] = TAGPARSER[tagCode][2](Buffer.from(tagWords));
         }
         
-        else if (tagCode%2==1){
+        else if (Number(tagCode)%2==1){
             unknowns[tagCode]=tagWords;
             fin_content[tagcode]=tagWords.toString('hex');
         }
@@ -353,8 +380,25 @@ function decode(paymentReq){
         if(tagCode<240||tagCode>1000)
             tags.push(Buffer.concat([Buffer.from(tlvs.slice(0,2)),tlvs[2]]).toString('hex'));
     }
+    final['offer_id']=merkle_calc(tags);
+    if(!'discription' in fin_content ||!'node_id' in fin_content){
+        throw Error('missing'+ !'discription' in fin_content?' discription':'' + !'node_id' in fin_content?' node_id':''+'!')
+    }
+    final['valid']='true'
+    if('signature' in fin_content){
+        try{
+            check_sign(prefix=='lno'?'offer':(prefix=='lni'?'invoice':(prefix=='lnr'?'invoice_request':'bad prefix!')),
+                    final['offer_id'],
+                    fin_content['node_id'],
+                    fin_content['signature'])
+        }
+        catch(e){
+            throw Error('Bad Signature');
+        }
+                    
+    }
     final['contents']=fin_content;
-    final['offer_id']=signature_valid(tags);
+    
     return final;
 }
 function get_recurrence(address){
@@ -371,12 +415,14 @@ function get_recurrence(address){
         return recur;
     }
 }
-function fetch_invoice(address){
+function fetch_invoice(offer,amount=null,quantity=null,payerkey=null,counter=null){
     let request= new XMLHttpRequest();
-    let decoded=decode(address);
-    console.log(decoded)
-    if( 'amount' in decoded['contents']){
-        let link='https://bootstrap.bolt12.org/fetchinvoice/'+address+'/100/2';
+    let decoded=decode(offer);
+    if(decoded['contents']['recurrence']==undefined ){
+        let link='https://bootstrap.bolt12.org/fetchinvoice/'
+                    +(offer+'/')
+                    +(amount!=null?amount+'/':'')
+                    +(quantity!=null?quantity:'');
         console.log(link)
         request.open('GET',link);
         request.send();
@@ -386,32 +432,28 @@ function fetch_invoice(address){
                 console.log(JSON.parse(request.responseText));
             }
             else{
-                console.log(`error ${request.status} ${request.statusText}`);
+                console.log(`error ${request.status} \n ${request.responseText}`);
             }
         }
     }
+    else{
+        
+    }
 }
-fetch_invoice('lno1pqqnyzsmx5cx6umpwssx6atvw35j6ut4v9h8g6t50ysx7enxv4epgrmjw4ehgcm0wfczucm0d5hxzagkqyq3ugztng063cqx783exlm97ekyprnd4rsu5u5w5sez9fecrhcuc3ykqhcypjju7unu05vav8yvhn27lztf46k9gqlga8uvu4uq62kpuywnu6me8srgh2q7puczukr8arectaapfl5d4rd6uc7st7tnqf0ttx39n40s')
+let tlv_invoice_request_rev={};
+for(const [key,value] of Object.entries(tlv_invoice_request)){
+    tlv_invoice_request_rev[value[0]]=Number(key);
+}
+// console.log(tlv_invoice_request[4][1]('1cacc1f7d2b3a6b5f698069e3793f96bdcc32cfb249dde3b1d55c7f2f85c2985'));
+function invoice_request(offer){
+    // console.log(offer)
+    let resDict={};
+    resDict[tlv_invoice_request_rev['offer_id']] = tlv_invoice_request[tlv_invoice_request_rev['offer_id']][1](offer['offer_id']);
+    console.log(resDict);
+
+}
 module.exports={
     decode,
-    get_recurrence
+    get_recurrence,
+    fetch_invoice
 }
-
-//SIGNATURE VERIFICATION
-// var schnorr = require("bip-schnorr")
-// const sha256 = require('js-sha256');
-// var recur=new Recurrence({'period':10,'time_unit':0},null,1,{'basetime':31485600, 'start_any_perriod':0});
-// console.log(recur.get_period(1))
-// function hash(buffer) {
-//     return Buffer.from(sha256.create().update(buffer).array());
-// }
-// function taggedHash(tag, msg) {
-//     const tagHash = hash(tag);
-//     return hash(Buffer.concat([tagHash, tagHash, Buffer.from(msg,'hex')]));
-// }
-// hash = taggedHash(Buffer.from('lightningoffersignature'),'28522b52ac39fa518ce3a5b3e4a9a96372487e78ba5eb1540ec4d9f02ca82718');
-// if (schnorr.verify(Buffer.from('4b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605','hex'),hash,Buffer.from('f4c5b54263766d8aa86dcb28b9973449cf995ef58ce8a96430bbb5b516460f465e9794b6842f1260b400966a3eb7e1557998f858aeb5bce1459ebc984fa3cabb','hex'))){
-//     console.log('i am here');
-// }
-// else console.log('fucked');
-// console.log(Buffer.from('28522b52ac39fa518ce3a5b3e4a9a96372487e78ba5eb1540ec4d9f02ca82718','hex'));
