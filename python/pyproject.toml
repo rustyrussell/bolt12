@@ -1,9 +1,13 @@
 [tool.poetry]
 name = "bolt12"
-version = "0.1.0"
+version = "0.1.1"
 description = "Lightning Network BOLT12 Routines"
 authors = ["Rusty Russell <rusty@rustcorp.com.au>"]
 license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/rustyrussell/bolt12/"
+repository = "https://github.com/rustyrussell/bolt12/"
+keywords = [ "bitcoin", "lightning", "bolt12" ]
 
 [tool.poetry.dependencies]
 python = "^3.6"
