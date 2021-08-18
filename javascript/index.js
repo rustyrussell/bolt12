@@ -1,16 +1,5 @@
 var assert = require('assert');
 const schnorr = require('bip-schnorr');
-// try{
-//     schnorr.verify(
-//         Buffer.from('4b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605','hex'),
-//         Buffer.from('7c46ea1038c1ba1d6c8d731cbb6b1e63d369d95a832a2081258b0a663adf78f3','hex'),
-//         Buffer.from('f4c5b54263766d8aa86dcb28b9973449cf995ef58ce8a96430bbb5b516460f465e9794b6842f1260b400966a3eb7e1557998f858aeb5bce1459ebc984fa3cabb','hex')
-//     )
-//     console.log('done!')
-// }
-// catch (e){
-//     console.log('fucked')
-// }
 const {
     tlv_tlv_payload,
     tlv_offer,
@@ -177,8 +166,6 @@ function taggedHash(tag, msg) {
     const tagHash = hash(tag);
     return hash(concat([tagHash, tagHash, Buffer.from(msg,'hex')]));
 }
-console.log(taggedHash( Buffer.from('lightningoffersignature'),
-                '28522b52ac39fa518ce3a5b3e4a9a96372487e78ba5eb1540ec4d9f02ca82718').toString('hex'))
 function convert (data, inBits, outBits) {
     let value = 0
     let bits = 0
@@ -427,7 +414,6 @@ function fetch_invoice(offer,amount=null,quantity=null,payerkey=null,counter=nul
                     +(offer+'/')
                     +(amount!=null?amount+'/':'')
                     +(quantity!=null?quantity:'');
-        console.log(link)
         request.open('GET',link);
         request.send();
         request.resposeType='json'
