@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r python/requirements.txt
+          pip install 'pyln-proto >= 0.10.1' 'python-dateutil >= 2.8.2' 'bech32 >= 1.2.0'
           npm install js-sha256
       - name: Build and check
         run: |
@@ -58,7 +58,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest
-          pip install -r python/requirements.txt
+          pip install 'pyln-proto >= 0.10.1' 'python-dateutil >= 2.8.2' 'bech32 >= 1.2.0'
       - name: Build and check
         run: |
           make -C python check
@@ -78,7 +78,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r python/requirements.txt
+          pip install 'pyln-proto >= 0.10.1' 'python-dateutil >= 2.8.2' 'bech32 >= 1.2.0'
       - name: Build and check
         run: |
           make check-quotes

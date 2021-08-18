@@ -1,3 +1,0 @@
-pyln-proto
-python-dateutil
-bech32

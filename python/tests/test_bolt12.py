@@ -1,7 +1,10 @@
-#! /usr/bin/env python3
 import bolt12
 import json
 import time
+
+
+def test_version():
+    assert bolt12.__version__ == '0.1.0'
 
 # Grab offers testvector
 with open("../test-vectors/offers.json", "r") as f:
