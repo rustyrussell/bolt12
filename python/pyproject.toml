@@ -8,6 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/rustyrussell/bolt12/"
 repository = "https://github.com/rustyrussell/bolt12/"
 keywords = [ "bitcoin", "lightning", "bolt12" ]
+include = [ "src/bolt12/generated.py" ]
 
 [tool.poetry.dependencies]
 python = "^3.6"
