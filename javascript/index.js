@@ -381,8 +381,11 @@ function decode(paymentReq){
             tags.push(Buffer.concat([Buffer.from(tlvs.slice(0,2)),tlvs[2]]).toString('hex'));
     }
     final['offer_id']=merkle_calc(tags);
-    if(!'discription' in fin_content ||!'node_id' in fin_content){
-        throw Error('missing'+ !'discription' in fin_content?' discription':'' + !'node_id' in fin_content?' node_id':''+'!')
+    if(!('description' in fin_content)){
+        throw Error('missing description')
+    }
+    if(!('node_id' in fin_content)){
+        throw Error('missing node_id')
     }
     final['valid']='true'
     if('signature' in fin_content){
@@ -401,6 +404,8 @@ function decode(paymentReq){
     
     return final;
 }
+console.log(decode('lno1pqpq86q2fgcnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qcteyqcksu3qvfjkvmmjv5s8gmeqxcczqum9vdhkuernypkxzar9zsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqxqqqquyqq8ncyph3h0xskvfd69nppz2py2nxym7rlq255z4mevv5x7vqh077n792e3gcua5p734l7d2r0x7kat69gx6c3twqexgmplmmjz2tv9hne4j5s'));
+
 function get_recurrence(address){
     let decoded=decode(address);
     if (!'recurrence' in decoded['contents']){
