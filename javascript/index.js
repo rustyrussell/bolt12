@@ -368,10 +368,10 @@ function decode(paymentReq){
             tags.push(Buffer.concat([Buffer.from(tlvs.slice(0,2)),tlvs[2]]).toString('hex'));
     }
     final['offer_id']=merkle_calc(tags);
-    if(!('description' in fin_content)){
+    if(prefix=='lno' && !('description' in fin_content)){
         throw Error('missing description')
     }
-    if(!('node_id' in fin_content)){
+    if(prefix=='lno'&&!('node_id' in fin_content)){
         throw Error('missing node_id')
     }
     final['valid']='true'
@@ -434,12 +434,79 @@ let tlv_invoice_request_rev={};
 for(const [key,value] of Object.entries(tlv_invoice_request)){
     tlv_invoice_request_rev[value[0]]=Number(key);
 }
-function invoice_request(offer){
+function invoice_request(offer, public_key, quantity=null, amount=null,
+                         recurrence_counter=null, recurrence_start=null, 
+                         period_offset=null, payer_info=null, payer_note=null){
     let resDict={};
+    resDict[tlv_invoice_request_rev['payer_key']]=tlv_invoice_request[tlv_invoice_request_rev['payer_key']][1](public_key);
     resDict[tlv_invoice_request_rev['offer_id']] = tlv_invoice_request[tlv_invoice_request_rev['offer_id']][1](offer['offer_id']);
+    //SIGNATURE ENCODE AFTER GETTING THE PAYER_KEY
+    if('quantity_min' in offer['contents'] || 'quantity_max' in offer['contents']){
+        if(quantity==null){
+            throw Error('Must set quantity');
+        }
+        else{
+            if('quantity_min' in offer['contents']){
+                if(quantity < offer['contents']['quantity_min']){
+                    throw Error('quantity is less than quantity_min');
+                }
+            }
+            if('quantity_max' in offer['contents']){
+                if(quantity > offer['contents']['quantity_max']){
+                    throw Error('quantity is greater than quantity_max');
+                }
+            }
+            resDict[tlv_invoice_request_rev['quantity']]=tlv_invoice_request[tlv_invoice_request_rev['quantity']][1](quantity);
+        }  
+    }
+    if(!'amount' in offer['contents']){
+        if(amount==null){
+            throw Error('Set amount!');
+        }
+    }
+    else{
+        if(amount!=null){
+            if(amount<offer['contents']['amount']){}
+            else{
+                resDict[tlv_invoice_request_rev['amount']]=tlv_invoice_request[tlv_invoice_request_rev['amount']][1](amount);
+            }
+        }
+    }
+    //previous unpaid invoice(clear doubts from rusty)
+    if('recurrence' in offer['contents']){
+        if(recurrence_counter==null){
+            throw Error('set a valid recurrence counter');
+        }
+        if('recurrence_base' in offer['contents'] 
+                && offer['contents']['recurrence_base']['start_any_period']){
+            if(recurrence_start==null)
+                throw Error('Must set valid recurrence_start')
+            if(period_offset==null)
+                throw Error('Must set valid period_offset')
+            //PERIOD OFFSET
+        }
+        else{
+            if(recurrence_start!=null){
+                throw Error('recurrence_start is illegal');
+            }
+        }
+    }
+    if(payer_info!=null){
+        resDict[tlv_invoice_request_rev['payer_info']]=tlv_invoice_request[tlv_invoice_request_rev['payer_info']][1](payer_info);
+    }
+    if(payer_note!=null){
+        resDict[tlv_invoice_request_rev['payer_note']]=tlv_invoice_request[tlv_invoice_request_rev['payer_note']][1](payer_note);
+    }
+    if('recurrence_limit' in offer['contents'] && 
+        recurrence_counter > offer['contents']['recurrence_limit']){
+            throw Error('Invoice request for a period greater than max_period is illegal!');
+    }
+    // recurrence paywindow
     console.log(resDict);
-
 }
+let res=decode('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qhjv0t6tlweh63k6ktuvt7299ecu5z348ht736jnusl68mzlu5nzryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzqwjywt78gy9l4h5q9x4n4llqryh52pwq342my37fd64tnvnfv0xfjszx94hhmc80dlr7xhpm4thumycek5r0px9fwnh9kykawj79ddjq');
+console.log(res);
+console.log(decode('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg'))
 module.exports={
     decode,
     get_recurrence,
