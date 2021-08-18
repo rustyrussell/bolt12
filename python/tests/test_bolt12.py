@@ -78,6 +78,9 @@ def test_decode():
 
         assert b12.values == offer["contents"]
 
+        enc = b12.encode()
+        assert enc == offer['string']
+
 
 def test_merkle():
     for offer in testoffers:

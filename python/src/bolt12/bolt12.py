@@ -288,6 +288,13 @@ class Bolt12(object):
         self.tlv_table = tlv_table
         self.values, self.unknowns = helper_fromwire_tlv(tlv_table, bytestr)
 
+    def encode(self) -> str:
+        """Turn the BOLT12 object back into a bech32 string"""
+        return simple_bech32_encode(self.hrp,
+                                    helper_towire_tlv(self.tlv_table,
+                                                      self.values,
+                                                      self.unknowns))
+
     @staticmethod
     def create(hrp: str, bytestr: bytes):
         if hrp == 'lno':
@@ -490,15 +497,19 @@ class Decoder(object):
         self.so_far += bech32str
         return self.complete()
 
-    def result(self) -> Tuple[Optional[Bolt12], str]:
-        """One string is complete(), try decoding"""
+    def raw_decode(self) -> Tuple[str, bytes]:
+        """One string is complete(), try converting to hrp, bytes"""
         assert self.complete()
         if self.so_far.startswith('+'):
-            return None, 'Missing a part?'
+            raise ValueError("Missing a part?")
 
+        return simple_bech32_decode(re.sub(r'([A-Z0-9a-z])\+\s*([A-Z0-9a-z])', r'\1\2',
+                                           self.so_far))
+
+    def result(self) -> Tuple[Optional[Bolt12], str]:
+        """One string is complete(), try decoding"""
         try:
-            hrp, bytestr = simple_bech32_decode(re.sub(r'([A-Z0-9a-z])\+\s*([A-Z0-9a-z])', r'\1\2',
-                                                       self.so_far))
+            hrp, bytestr = self.raw_decode()
         except ValueError as e:
             return None, ' '.join(e.args)
 
