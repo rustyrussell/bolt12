@@ -22,3 +22,18 @@ check-pytest: src/bolt12/generated.py
 check-mypy: src/bolt12/generated.py
 	mypy src/bolt12
 
+# This installs it in a local venv
+install-localenv:
+	poetry run poetry install
+
+# This tests it in the local venv
+test-localenv:
+	poetry run pytest
+
+# This checks our version in pyproject.toml agreed with bolt12/__init__.py.
+check-version: install-localenv
+	poetry run python -c "import bolt12; assert bolt12.__version__ == \"`poetry version -s`\""
+
+upload: check-version test-localenv
+	poetry build
+	poetry upload

@@ -4,7 +4,7 @@ import time
 
 
 def test_version():
-    assert bolt12.__version__ == '0.1.1'
+    assert bolt12.__version__ == '0.1.2'
 
 # Grab offers testvector
 with open("../test-vectors/offers.json", "r") as f:
