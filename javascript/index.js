@@ -404,7 +404,6 @@ function decode(paymentReq){
     
     return final;
 }
-console.log(decode('lno1pqpq86q2fgcnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qcteyqcksu3qvfjkvmmjv5s8gmeqxcczqum9vdhkuernypkxzar9zsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqxqqqquyqq8ncyph3h0xskvfd69nppz2py2nxym7rlq255z4mevv5x7vqh077n792e3gcua5p734l7d2r0x7kat69gx6c3twqexgmplmmjz2tv9hne4j5s'));
 
 function get_recurrence(address){
     let decoded=decode(address);
@@ -449,9 +448,7 @@ let tlv_invoice_request_rev={};
 for(const [key,value] of Object.entries(tlv_invoice_request)){
     tlv_invoice_request_rev[value[0]]=Number(key);
 }
-// console.log(tlv_invoice_request[4][1]('1cacc1f7d2b3a6b5f698069e3793f96bdcc32cfb249dde3b1d55c7f2f85c2985'));
 function invoice_request(offer){
-    // console.log(offer)
     let resDict={};
     resDict[tlv_invoice_request_rev['offer_id']] = tlv_invoice_request[tlv_invoice_request_rev['offer_id']][1](offer['offer_id']);
     console.log(resDict);
