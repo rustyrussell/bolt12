@@ -18,7 +18,7 @@ from .fundamentals import (towire_u64, towire_u32, towire_u16,
                            towire_channel_id, fromwire_channel_id,
                            towire_signature, fromwire_signature)
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 __all__ = ["Recurrence",
            "Bolt12",
