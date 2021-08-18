@@ -34,6 +34,6 @@ test-localenv:
 check-version: install-localenv
 	poetry run python -c "import bolt12; assert bolt12.__version__ == \"`poetry version -s`\""
 
-upload: check-version test-localenv
+publish: check-version test-localenv
 	poetry build
-	poetry upload
+	poetry publish
