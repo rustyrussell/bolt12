@@ -4,12 +4,12 @@ import bech32
 from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 from collections import namedtuple
-import generated
 import hashlib
 import re
 import time
-from fundamentals import fromwire_bigsize, towire_bigsize
-from key import verify_schnorr, sign_schnorr
+from .fundamentals import fromwire_bigsize, towire_bigsize
+from .key import verify_schnorr, sign_schnorr
+from .generated import tlv_offer, tlv_invoice_request, tlv_invoice
 
 
 # BOLT #12:
@@ -407,7 +407,7 @@ class Bolt12(object):
 class Offer(Bolt12):
     """Class for an offer"""
     def __init__(self, hrp: str, bytestr: bytes):
-        super().__init__(hrp, generated.tlv_offer, bytestr)
+        super().__init__(hrp, tlv_offer, bytestr)
         self.offer_id = self.merkle()
 
     def check(self) -> Tuple[bool, str]:
@@ -467,13 +467,13 @@ class Offer(Bolt12):
 class InvoiceRequest(Bolt12):
     """Class for an invoice_request"""
     def __init__(self, hrp: str, bytestr: bytes):
-        super().__init__(hrp, generated.tlv_invoice_request, bytestr)
+        super().__init__(hrp, tlv_invoice_request, bytestr)
 
 
 class Invoice(Bolt12):
     """Class for an invoice"""
     def __init__(self, hrp: str, bytestr: bytes):
-        super().__init__(hrp, generated.tlv_invoice, bytestr)
+        super().__init__(hrp, tlv_invoice, bytestr)
 
 
 class Decoder(object):
