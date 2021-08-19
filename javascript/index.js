@@ -221,10 +221,9 @@ function check_sign(msgname, merkle_root, pubkey32, bip340sig){
             Buffer.from(msg,'hex'),
             Buffer.from(bip340sig,'hex')
         )
-        return 'true';
     }
     catch(e){
-        return 'false';
+        throw Error('bad_signature');
     }
 }
 function merkle_calc(tlv){
@@ -301,8 +300,8 @@ function decode(paymentReq){
     }
     for (let i=0;i<encodedData.length;i++){
         words[words.length]=ALPHABET_MAP[encodedData.charAt(i)]
-    }
-    words_8bit=convert(words,5,8)
+    } 
+    words_8bit = convert(words,5,8);
     const tags = [];
     const final={};
     const fin_content={};
@@ -330,7 +329,7 @@ function decode(paymentReq){
                 throw Error('TLVs should be in ascending order!');
 
         tgcode.push(tagCode);
-        
+
         tlvs.push(Number(''+tagCode));
         
         buffer=res[1];
@@ -345,6 +344,9 @@ function decode(paymentReq){
         
         tagWords = buffer.slice(0, Number(''+tagLength));
 
+        // if(prefix=='lnr'){
+        //     console.log(tagWords);
+        // }
         
         if (tagCode in TAGPARSER){
             tagName=TAGPARSER[tagCode][0];
@@ -374,7 +376,7 @@ function decode(paymentReq){
     if(prefix=='lno'&&!('node_id' in fin_content)){
         throw Error('missing node_id')
     }
-    final['valid']='true'
+    final['valid']='true';
     if('signature' in fin_content){
         try{
             check_sign(prefix=='lno'?'offer':(prefix=='lni'?'invoice':(prefix=='lnr'?'invoice_request':'bad prefix!')),
@@ -388,7 +390,6 @@ function decode(paymentReq){
                     
     }
     final['contents']=fin_content;
-    
     return final;
 }
 
@@ -434,79 +435,135 @@ let tlv_invoice_request_rev={};
 for(const [key,value] of Object.entries(tlv_invoice_request)){
     tlv_invoice_request_rev[value[0]]=Number(key);
 }
-function invoice_request(offer, public_key, quantity=null, amount=null,
-                         recurrence_counter=null, recurrence_start=null, 
-                         period_offset=null, payer_info=null, payer_note=null){
-    let resDict={};
-    resDict[tlv_invoice_request_rev['payer_key']]=tlv_invoice_request[tlv_invoice_request_rev['payer_key']][1](public_key);
-    resDict[tlv_invoice_request_rev['offer_id']] = tlv_invoice_request[tlv_invoice_request_rev['offer_id']][1](offer['offer_id']);
-    //SIGNATURE ENCODE AFTER GETTING THE PAYER_KEY
+
+function invoice_req_check(offer, val_dict){
+    if(!'payer_key' in val_dict){
+        throw Error('payer key required!')
+    }
+    // SIGNATURE ENCODE AFTER GETTING THE PAYER_KEY
     if('quantity_min' in offer['contents'] || 'quantity_max' in offer['contents']){
-        if(quantity==null){
+        if(!('quantity' in val_dict)){
             throw Error('Must set quantity');
         }
         else{
             if('quantity_min' in offer['contents']){
-                if(quantity < offer['contents']['quantity_min']){
+                if(val_dict['quantity'] < offer['contents']['quantity_min']){
                     throw Error('quantity is less than quantity_min');
                 }
             }
             if('quantity_max' in offer['contents']){
-                if(quantity > offer['contents']['quantity_max']){
+                if(val_dict['quantity'] > offer['contents']['quantity_max']){
                     throw Error('quantity is greater than quantity_max');
                 }
             }
-            resDict[tlv_invoice_request_rev['quantity']]=tlv_invoice_request[tlv_invoice_request_rev['quantity']][1](quantity);
         }  
     }
+    else{
+        if('quantity' in val_dict){
+            throw Error("Quantity is not required!")
+        }
+    }
+
     if(!'amount' in offer['contents']){
-        if(amount==null){
+        if(val_dict['amount']==null){
             throw Error('Set amount!');
         }
     }
     else{
-        if(amount!=null){
-            if(amount<offer['contents']['amount']){}
-            else{
-                resDict[tlv_invoice_request_rev['amount']]=tlv_invoice_request[tlv_invoice_request_rev['amount']][1](amount);
+        if('amount' in val_dict){
+            if(val_dict['amount']<offer['contents']['amount']){
+                throw Error('amount is less than what is required!');
             }
         }
     }
     //previous unpaid invoice(clear doubts from rusty)
     if('recurrence' in offer['contents']){
-        if(recurrence_counter==null){
+        if(!val_dict['recurrence_counter'] in val_dict){
             throw Error('set a valid recurrence counter');
         }
         if('recurrence_base' in offer['contents'] 
                 && offer['contents']['recurrence_base']['start_any_period']){
-            if(recurrence_start==null)
+            if(!'recurrence_start' in val_dict)
                 throw Error('Must set valid recurrence_start')
-            if(period_offset==null)
+            if(!'period_offset' in val_dict)
                 throw Error('Must set valid period_offset')
-            //PERIOD OFFSET
         }
         else{
-            if(recurrence_start!=null){
+            if('recurrence_start' in val_dict){
                 throw Error('recurrence_start is illegal');
             }
         }
+        if('recurrence_limit' in offer['contents'] && 
+            val_dict['recurrence_counter'] > offer['contents']['recurrence_limit']){
+                throw Error('Invoice request for a period greater than max_period is illegal!');
+        }
+        if('recurrence_paywindow' in offer['contents']){
+            if('recurrence_basetime' in offer['contents'] ||
+                'recurrence_counter' in offer['contents']){
+                    //should not send for period prior to 'seconds_before' and later than 'seconds_after' 
+                }
+        }
+        else{
+            
+        }
     }
-    if(payer_info!=null){
-        resDict[tlv_invoice_request_rev['payer_info']]=tlv_invoice_request[tlv_invoice_request_rev['payer_info']][1](payer_info);
+    else{
+        if('recurrence_counter' in val_dict){
+            throw Error('There is no recurrence in offer!');
+        }
+        if('recurrence_start' in val_dict){
+            throw Error('There is no recurrence in offer!');
+        }
     }
-    if(payer_note!=null){
-        resDict[tlv_invoice_request_rev['payer_note']]=tlv_invoice_request[tlv_invoice_request_rev['payer_note']][1](payer_note);
-    }
-    if('recurrence_limit' in offer['contents'] && 
-        recurrence_counter > offer['contents']['recurrence_limit']){
-            throw Error('Invoice request for a period greater than max_period is illegal!');
-    }
-    // recurrence paywindow
-    console.log(resDict);
 }
-let res=decode('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qhjv0t6tlweh63k6ktuvt7299ecu5z348ht736jnusl68mzlu5nzryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzqwjywt78gy9l4h5q9x4n4llqryh52pwq342my37fd64tnvnfv0xfjszx94hhmc80dlr7xhpm4thumycek5r0px9fwnh9kykawj79ddjq');
-console.log(res);
-console.log(decode('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg'))
+
+function invoice_request(offer,val_dict){
+    offer=decode(offer);
+    invoice_req_check(offer,val_dict);
+    let resDict={};
+    let tags=[];
+    resDict[tlv_invoice_request_rev['offer_id']] = tlv_invoice_request[tlv_invoice_request_rev['offer_id']][1](offer['offer_id']);
+    let keys=[];
+    for(key in val_dict){
+        if(!(key in tlv_invoice_request_rev)){
+            throw Error(key + ' is not defined in spec!');
+        }
+        else{
+            resDict[tlv_invoice_request_rev[key]]=tlv_invoice_request[tlv_invoice_request_rev[key]][1](val_dict[key]);
+            keys.push(tlv_invoice_request_rev[key]);
+        }
+    }
+    let words=[];
+    keys=keys.sort(function(a, b){return a - b});
+
+    for (let i=0;i<keys.length;i++){
+        buf = Buffer.alloc(0);
+        buf = concat([buf, towire_bigsize(keys[i])]);
+        buf = concat([buf, towire_bigsize(resDict[keys[i]].length)]);
+        buf = concat([buf, resDict[keys[i]]])
+        tags.push(buf.toString('hex'));
+        while(buf.length){
+            words.push(parseInt(buf.slice(0,1).toString('hex'),16));
+            buf=buf.slice(1);
+        }
+    }
+
+    console.log(tags)
+    // return res_string;
+}
+console.log(decode('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qhjv0t6tlweh63k6ktuvt7299ecu5z348ht736jnusl68mzlu5nzryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzqwjywt78gy9l4h5q9x4n4llqryh52pwq342my37fd64tnvnfv0xfjszx94hhmc80dlr7xhpm4thumycek5r0px9fwnh9kykawj79ddjq'));
+(invoice_request('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg',
+{
+    "offer_id": "e66d7beb93ef1b1084a73e5de6975ebc75c20d1a177bd2fb022b110226baf716",
+    "features": ['80','00','02','42','00'],
+    "recurrence_counter": 0,
+    "recurrence_start": 23,
+    "payer_key": "bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4",
+    "payer_info": ['f8','15','5f','66','88','b3','87','8e','bd','2d','8c','73','a9','1e','58','57'] 
+}));
+// let msg=taggedHash(Buffer.from('lightninginvoice_requestpayer_signature'),'43af29f0f5ba76e111a8993b46b93827a38795e6daa223d9b499738c60bbf9e4');
+// console.log(schnorr.sign('bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4', Buffer.from(msg,'hex')));
+
 module.exports={
     decode,
     get_recurrence,
