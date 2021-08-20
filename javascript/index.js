@@ -312,11 +312,12 @@ function decode(paymentReq){
     final['type']=type;
     
     buffer= (Buffer.from(words_8bit));
-
     if(words.length * 5 % 8 != 0){
         buffer=buffer.slice(0,-1);
     }
-
+    // if(prefix=='lnr'){
+    //     console.log(words);
+    // }
     while(buffer.length){
         let tlvs=[];
 
@@ -345,6 +346,7 @@ function decode(paymentReq){
         tagWords = buffer.slice(0, Number(''+tagLength));
 
         // if(prefix=='lnr'){
+        //     console.log(tagCode);
         //     console.log(tagWords);
         // }
         
@@ -385,7 +387,7 @@ function decode(paymentReq){
                     fin_content['signature'])
         }
         catch(e){
-            throw Error('Bad Signature');
+            throw Error('Bad Signature!');
         }
                     
     }
@@ -435,9 +437,8 @@ let tlv_invoice_request_rev={};
 for(const [key,value] of Object.entries(tlv_invoice_request)){
     tlv_invoice_request_rev[value[0]]=Number(key);
 }
-
 function invoice_req_check(offer, val_dict){
-    if(!'payer_key' in val_dict){
+    if(!('payer_key' in val_dict)){
         throw Error('payer key required!')
     }
     // SIGNATURE ENCODE AFTER GETTING THE PAYER_KEY
@@ -517,8 +518,13 @@ function invoice_req_check(offer, val_dict){
     }
 }
 
-function invoice_request(offer,val_dict){
+function invoice_request(offer, secret_payer_key=null, val_dict){
+    if(secret_payer_key==null){
+        throw Error("can't sign this without secret key :)");
+    }
     offer=decode(offer);
+    val_dict['offer_id']=offer['offer_id'];
+
     invoice_req_check(offer,val_dict);
     let resDict={};
     let tags=[];
@@ -535,37 +541,52 @@ function invoice_request(offer,val_dict){
     }
     let words=[];
     keys=keys.sort(function(a, b){return a - b});
-
+    let whole_buf=Buffer.alloc(0);
     for (let i=0;i<keys.length;i++){
         buf = Buffer.alloc(0);
         buf = concat([buf, towire_bigsize(keys[i])]);
         buf = concat([buf, towire_bigsize(resDict[keys[i]].length)]);
         buf = concat([buf, resDict[keys[i]]])
         tags.push(buf.toString('hex'));
+        whole_buf = concat([whole_buf,buf]);
         while(buf.length){
             words.push(parseInt(buf.slice(0,1).toString('hex'),16));
             buf=buf.slice(1);
         }
     }
-
-    console.log(tags)
-    // return res_string;
+    let merkle_root=merkle_calc(tags);
+    let msg =taggedHash(Buffer.from('lightninginvoice_requestpayer_signature'),merkle_root);
+    let payer_sig=schnorr.sign(secret_payer_key,msg);
+    buf=concat([buf, towire_bigsize(240)]);
+    buf=concat([buf, towire_bigsize(payer_sig.length)]);
+    buf=concat([buf, payer_sig]);
+    whole_buf=concat([whole_buf,buf])
+    while(buf.length){
+        words.push(parseInt(buf.slice(0,1).toString('hex'),16));
+        buf=buf.slice(1);
+    }
+    let words_5bit=convert(words,8,5);
+    res_string='lnr1';
+    for(let i=0;i<words_5bit.length;i++){
+        res_string+=ALPHABET[words_5bit[i]];
+    }
+    return res_string;
 }
-console.log(decode('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qhjv0t6tlweh63k6ktuvt7299ecu5z348ht736jnusl68mzlu5nzryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzqwjywt78gy9l4h5q9x4n4llqryh52pwq342my37fd64tnvnfv0xfjszx94hhmc80dlr7xhpm4thumycek5r0px9fwnh9kykawj79ddjq'));
-(invoice_request('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg',
-{
-    "offer_id": "e66d7beb93ef1b1084a73e5de6975ebc75c20d1a177bd2fb022b110226baf716",
-    "features": ['80','00','02','42','00'],
-    "recurrence_counter": 0,
-    "recurrence_start": 23,
-    "payer_key": "bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4",
-    "payer_info": ['f8','15','5f','66','88','b3','87','8e','bd','2d','8c','73','a9','1e','58','57'] 
-}));
-// let msg=taggedHash(Buffer.from('lightninginvoice_requestpayer_signature'),'43af29f0f5ba76e111a8993b46b93827a38795e6daa223d9b499738c60bbf9e4');
-// console.log(schnorr.sign('bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4', Buffer.from(msg,'hex')));
-
+// console.log(decode('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qhjv0t6tlweh63k6ktuvt7299ecu5z348ht736jnusl68mzlu5nzryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzqxvs90g9x4jacfcw6lph937ym769923a4t8tpsag59uhxlfcu3nt849n2c3g85qfrr3zcrelx94dc4fg9mjdu3f5ymfk8snde8dxtzyc'));
+// console.log(invoice_request('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg',
+// "bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4",
+// {
+//     "features": ['80','00','02','42','00'],
+//     "recurrence_counter": 0,
+//     "recurrence_start": 23,
+//     "payer_key": "bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4",
+//     "payer_info": ['f8','15','5f','66','88','b3','87','8e','bd','2d','8c','73','a9','1e','58','57']
+// }
+// ));
 module.exports={
     decode,
     get_recurrence,
-    fetch_invoice
+    fetch_invoice,
+    invoice_request,
+    invoice_req_check
 }
