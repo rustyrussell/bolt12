@@ -19,10 +19,10 @@
 - [x] run test vectors in JS -- AS
 - [x] write some examples -- AS
 - [x] make v0.0.1alpha of NPM -- AS
-- [ ] fetchinvoice creation support, sending via bootstrap.bolt12.org -- AS
+- [x] fetchinvoice creation support, sending via bootstrap.bolt12.org -- AS
 - [x] Check signatures -- AS
 - [x] check() for offers -- AS
-- [ ] check() for invoice_request -- AS
+- [x] check() for invoice_request -- AS
 - [ ] check() for invoices -- AS
 - [x] Implement recurrence class -- AS
 - [ ] Native fetchinvoice -- AS
