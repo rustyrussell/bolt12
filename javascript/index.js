@@ -409,30 +409,7 @@ function get_recurrence(address){
         return recur;
     }
 }
-function fetch_invoice(offer,amount=null,quantity=null,payerkey=null,counter=null){
-    let request= new XMLHttpRequest();
-    let decoded=decode(offer);
-    if(decoded['contents']['recurrence']==undefined ){
-        let link='https://bootstrap.bolt12.org/fetchinvoice/'
-                    +(offer+'/')
-                    +(amount!=null?amount+'/':'')
-                    +(quantity!=null?quantity:'');
-        request.open('GET',link);
-        request.send();
-        request.resposeType='json'
-        request.onload=()=>{
-            if(request.status==200){
-                console.log(JSON.parse(request.responseText));
-            }
-            else{
-                console.log(`error ${request.status} \n ${request.responseText}`);
-            }
-        }
-    }
-    else{
-        
-    }
-}
+
 let tlv_invoice_request_rev={};
 for(const [key,value] of Object.entries(tlv_invoice_request)){
     tlv_invoice_request_rev[value[0]]=Number(key);
@@ -572,17 +549,24 @@ function invoice_request(offer, secret_payer_key=null, val_dict){
     }
     return res_string;
 }
-// console.log(decode('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qhjv0t6tlweh63k6ktuvt7299ecu5z348ht736jnusl68mzlu5nzryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzqxvs90g9x4jacfcw6lph937ym769923a4t8tpsag59uhxlfcu3nt849n2c3g85qfrr3zcrelx94dc4fg9mjdu3f5ymfk8snde8dxtzyc'));
-// console.log(invoice_request('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg',
-// "bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4",
-// {
-//     "features": ['80','00','02','42','00'],
-//     "recurrence_counter": 0,
-//     "recurrence_start": 23,
-//     "payer_key": "bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4",
-//     "payer_info": ['f8','15','5f','66','88','b3','87','8e','bd','2d','8c','73','a9','1e','58','57']
-// }
-// ));
+function fetch_invoice(invoice_req,node_id){
+    let request= new XMLHttpRequest();
+    let link='https://bootstrap.bolt12.org/rawinvreq/'
+                +invoice_req+node_id;
+    request.open('GET',link);
+    request.send();
+    request.resposeType='json'
+    request.onload=()=>{
+        if(request.status==200){
+            console.log(JSON.parse(request.responseText));
+        }
+        else{
+            console.log(`error ${request.status} \n ${request.responseText}`);
+        }
+    }
+}
+// fetch_invoice('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qhjv0t6tlweh63k6ktuvt7299ecu5z348ht736jnusl68mzlu5nzryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzqwjywt78gy9l4h5q9x4n4llqryh52pwq342my37fd64tnvnfv0xfjszx94hhmc80dlr7xhpm4thumycek5r0px9fwnh9kykawj79ddjq',
+//                 '4b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605')
 module.exports={
     decode,
     get_recurrence,
