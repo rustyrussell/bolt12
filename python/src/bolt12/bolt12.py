@@ -296,7 +296,7 @@ class Bolt12(object):
                                                       self.unknowns))
 
     @staticmethod
-    def create(hrp: str, bytestr: bytes):
+    def decode(hrp: str, bytestr: bytes):
         if hrp == 'lno':
             return Offer(hrp, bytestr)
         elif hrp == 'lnr':
@@ -305,6 +305,16 @@ class Bolt12(object):
             return Invoice(hrp, bytestr)
 
         raise ValueError('Unknown human readable prefix {}'.format(hrp))
+
+    @staticmethod
+    def create(cls, hrp: str, tlv_table: Dict[int, Tuple[str, Any, Any]],
+               values: Dict[str, Any]):
+        self = cls()
+        self.hrp = hrp
+        self.tlv_table = tlv_table
+        self.unknowns = {}
+        self.values = values
+        return self
 
     # FIXME: Returns 'hashlib.HASH'?
     @staticmethod
@@ -514,7 +524,7 @@ class Decoder(object):
             return None, ' '.join(e.args)
 
         try:
-            ret = Bolt12.create(hrp, bytestr)
+            ret = Bolt12.decode(hrp, bytestr)
         except ValueError as e:
             return None, ' '.join(e.args)
 
