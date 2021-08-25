@@ -223,3 +223,9 @@ def test_recurrence_period_start_offset():
             assert rec.iterations <= 2
             start, end, _, _ = rec._get_period(which_period, 1609459200)
             assert when >= start and when < end
+
+
+def test_create():
+    for o in testoffers:
+        offer = bolt12.Offer.create(**o['contents'])
+        assert offer.merkle().hex() == o["offer_id"]

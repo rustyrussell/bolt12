@@ -283,10 +283,14 @@ period??"""
 
 
 class Bolt12(object):
-    def __init__(self, hrp: str, tlv_table: Dict[int, Tuple[str, Any, Any]], bytestr: bytes):
+    def __init__(self, hrp: str, tlv_table: Dict[int, Tuple[str, Any, Any]], bytestr: Optional[bytes]):
         self.hrp = hrp
         self.tlv_table = tlv_table
-        self.values, self.unknowns = helper_fromwire_tlv(tlv_table, bytestr)
+        if bytestr is None:
+            self.values: Dict[str, Any] = {}
+            self.unknowns: Dict[int, bytes] = {}
+        else:
+            self.values, self.unknowns = helper_fromwire_tlv(tlv_table, bytestr)
 
     def encode(self) -> str:
         """Turn the BOLT12 object back into a bech32 string"""
@@ -298,22 +302,27 @@ class Bolt12(object):
     @staticmethod
     def decode(hrp: str, bytestr: bytes):
         if hrp == 'lno':
-            return Offer(hrp, bytestr)
+            return Offer(bytestr)
         elif hrp == 'lnr':
-            return InvoiceRequest(hrp, bytestr)
+            return InvoiceRequest(bytestr)
         elif hrp == 'lni':
-            return Invoice(hrp, bytestr)
+            return Invoice(bytestr)
 
         raise ValueError('Unknown human readable prefix {}'.format(hrp))
 
-    @staticmethod
+    def _check_values(self, values: Dict[str, Any]):
+        """Make sure each value is in tlv_table, or raise ValueError"""
+        possible_values = set([t[0] for t in self.tlv_table.values()])
+        for k in values:
+            if k not in possible_values:
+                raise ValueError('Unknown field {}'.format(k))
+
+    @classmethod
     def create(cls, hrp: str, tlv_table: Dict[int, Tuple[str, Any, Any]],
                values: Dict[str, Any]):
-        self = cls()
-        self.hrp = hrp
-        self.tlv_table = tlv_table
-        self.unknowns = {}
+        self = cls(hrp, tlv_table, None)
         self.values = values
+        self._check_values(values)
         return self
 
     # FIXME: Returns 'hashlib.HASH'?
@@ -423,9 +432,18 @@ class Bolt12(object):
 
 class Offer(Bolt12):
     """Class for an offer"""
-    def __init__(self, hrp: str, bytestr: bytes):
-        super().__init__(hrp, tlv_offer, bytestr)
+    def __init__(self, bytestr: Optional[bytes]):
+        super().__init__('lno', tlv_offer, bytestr)
+        if bytestr:
+            self.offer_id = self.merkle()
+
+    @classmethod
+    def create(cls, **kwargs):
+        self = cls(None)
+        self._check_values(kwargs)
+        self.values = kwargs
         self.offer_id = self.merkle()
+        return self
 
     def check(self) -> Tuple[bool, str]:
         """Check it's OK: returns (True, '') or (False, reason)"""
@@ -483,14 +501,28 @@ class Offer(Bolt12):
 
 class InvoiceRequest(Bolt12):
     """Class for an invoice_request"""
-    def __init__(self, hrp: str, bytestr: bytes):
-        super().__init__(hrp, tlv_invoice_request, bytestr)
+    def __init__(self, bytestr: Optional[bytes]):
+        super().__init__('lnr', tlv_invoice_request, bytestr)
+
+    @classmethod
+    def create(cls, **kwargs):
+        self = cls(None)
+        self._check_values(kwargs)
+        self.values = kwargs
+        return self
 
 
 class Invoice(Bolt12):
     """Class for an invoice"""
-    def __init__(self, hrp: str, bytestr: bytes):
-        super().__init__(hrp, tlv_invoice, bytestr)
+    def __init__(self, bytestr: Optional[bytes]):
+        super().__init__('lni', tlv_invoice, bytestr)
+
+    @classmethod
+    def create(cls, **kwargs):
+        self = cls(None)
+        self._check_values(kwargs)
+        self.values = kwargs
+        return self
 
 
 class Decoder(object):
