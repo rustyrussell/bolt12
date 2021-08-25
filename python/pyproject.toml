@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bolt12"
-version = "0.1.2"
+version = "0.1.3"
 description = "Lightning Network BOLT12 Routines"
 authors = ["Rusty Russell <rusty@rustcorp.com.au>"]
 license = "MIT"
