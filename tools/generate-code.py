@@ -345,7 +345,7 @@ parser.add_argument('--output', '-o', help='Where to direct output')
 parser.add_argument('--preamble', help='Prepend this file to the output')
 parser.add_argument('--postamble', help='Append this file to the output')
 parser.add_argument('--language', help='Create routines for this language', default='js')
-parser.add_argument('--spec', help='Use these spec CSV files', action='append', default=['../specs/bolt4.csv', '../specs/bolt12.csv'])
+parser.add_argument('--spec', help='Use these spec CSV files', action='append', default=[])
 parser.add_argument('types', nargs='*', help='Only extract these tags')
 
 args = parser.parse_args()
@@ -358,7 +358,10 @@ if args.preamble:
     with open(args.preamble, "r") as f:
         ofile.write(f.read())
 
-# We need types from bolt 4.
+# Using default=['../specs/bolt4.csv', '../specs/bolt12.csv'] does not work, since it appends.
+if args.spec == []:
+    args.spec = ['../specs/bolt4.csv', '../specs/bolt12.csv']
+
 csv_lines = []
 for specfile in args.spec:
     with open(specfile, 'r') as f:
