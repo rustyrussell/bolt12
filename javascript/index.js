@@ -237,6 +237,8 @@ function merkle_calc(tlv){
     }
     return merkle_nodes[0]
 }
+
+
 function decode(paymentReq){
     if (typeof paymentReq !== 'string') 
         throw new Error('Lightning Payment Request must be string');
@@ -315,9 +317,7 @@ function decode(paymentReq){
     if(words.length * 5 % 8 != 0){
         buffer=buffer.slice(0,-1);
     }
-    // if(prefix=='lnr'){
-    //     console.log(words);
-    // }
+
     while(buffer.length){
         let tlvs=[];
 
@@ -345,16 +345,13 @@ function decode(paymentReq){
         
         tagWords = buffer.slice(0, Number(''+tagLength));
 
-        // if(prefix=='lnr'){
-        //     console.log(tagCode);
-        //     console.log(tagWords);
-        // }
         
         if (tagCode in TAGPARSER){
             tagName=TAGPARSER[tagCode][0];
             fin_content[tagName] = TAGPARSER[tagCode][2](Buffer.from(tagWords));
         }
         
+        // This doesn't apply to invoices?
         else if (Number(tagCode)%2==1){
             unknowns[tagCode]=tagWords;
             fin_content[tagcode]=tagWords.toString('hex');
@@ -552,7 +549,7 @@ function invoice_request(offer, secret_payer_key=null, val_dict){
 function fetch_invoice(invoice_req,node_id){
     let request= new XMLHttpRequest();
     let link='https://bootstrap.bolt12.org/rawinvreq/'
-                +invoice_req+node_id;
+                +invoice_req+'/02'+node_id;
     request.open('GET',link);
     request.send();
     request.resposeType='json'
@@ -560,11 +557,38 @@ function fetch_invoice(invoice_req,node_id){
         if(request.status==200){
             console.log(JSON.parse(request.responseText));
         }
-        else{
-            console.log(`error ${request.status} \n ${request.responseText}`);
+        else if(request.status==400 && request.responseText.includes("'nodeid: should be a node id: invalid token")){
+            let request2= new XMLHttpRequest();
+            link='https://bootstrap.bolt12.org/rawinvreq/'
+                +invoice_req+'/03'+node_id;
+            request2.open('GET',link);
+            request2.send();
+            request2.resposeType='json'
+            request2.onload=()=>{
+                if(request2.status==200){
+                    console.log(JSON.parse(request2.responseText));
+                }
+                else{
+                    console.log(`error ${request2.status} \n ${request2.responseText}`);  
+                }
+            }
         }
+        else
+            console.log(`error ${request.status} \n ${request.responseText}`);
     }
 }
+
+// console.log(invoice_request('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg',
+// "bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4",
+// {
+//     "features": ['80','00','02','42','00'],
+//     "recurrence_counter": 0,
+//     "recurrence_start": 23,
+//     "payer_key": "bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4",
+//     "payer_info": ['f8','15','5f','66','88','b3','87','8e','bd','2d','8c','73','a9','1e','58','57']
+// }
+// ))
+console.log(decode('lno1pqp3apyqpg9zq36f2ez5z46ptys3gqq7yqmhlzgnvate6rxlc2pnhser58gp298w5sx53n8gd5c78xpz8cxtxdsq7pqytdwfm85qdvwjsafme8yhms92v0cujxtj7nfu7n0a4u6pwtnf6lgmfu9h8wxdj2yn88c6zeu2qjguvucpkxq7egsqjqcs9zf30zvdng'));
 // fetch_invoice('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qhjv0t6tlweh63k6ktuvt7299ecu5z348ht736jnusl68mzlu5nzryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzqwjywt78gy9l4h5q9x4n4llqryh52pwq342my37fd64tnvnfv0xfjszx94hhmc80dlr7xhpm4thumycek5r0px9fwnh9kykawj79ddjq',
 //                 '4b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605')
 module.exports={
