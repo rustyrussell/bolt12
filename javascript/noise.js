@@ -287,56 +287,7 @@ class NoiseState{
         this.ck = result.slice(0, 32);
         this.rn = Buffer.alloc(12);
     }
-    // return NoiseState;
 };
-// const ls = Buffer.from("1111111111111111111111111111111111111111111111111111111111111111", "hex"); // prettier-ignore
-// const es = Buffer.from("1212121212121212121212121212121212121212121212121212121212121212", "hex"); // prettier-ignore
-// let vals={ls,es};
-// let sut=new NoiseState(vals);
-// sut.initiatorAct1(Buffer.from('028d7500dd4c12685d1f568b4c2b5048e8534b873319f3a8daa612b469132ec7f7','hex'));
-// sut.initiatorAct2(Buffer.from('0002466d7fcae563e5cb09a0d1870bb580344804617879a14949cf22285f1bae3f276e2470b93aac583c9ef6eafca3f730ae','hex'));
-// sut.initiatorAct3();
-// sut.encryptMessage(Buffer.from("68656c6c6f", "hex"));
-// const input = Buffer.from("68656c6c6f", "hex");
-// for (let i = 1; i <= 1001; i++) {
-//     const m = sut.encryptMessage(input);
-//     const tests = {
-//         1: "72887022101f0b6753e0c7de21657d35a4cb2a1f5cde2650528bbc8f837d0f0d7ad833b1a256a1",
-//         500: "178cb9d7387190fa34db9c2d50027d21793c9bc2d40b1e14dcf30ebeeeb220f48364f7a4c68bf8",
-//         501: "1b186c57d44eb6de4c057c49940d79bb838a145cb528d6e8fd26dbe50a60ca2c104b56b60e45bd",
-//         1000: "4a2f3cc3b5e78ddb83dcb426d9863d9d9a723b0337c89dd0b005d89f8d3c05c52b76b29b740f09",
-//         1001: "2ecd8c8a5629d0d02ab457a0fdd0f7b90a192cd46be5ecb6ca570bfc5e268338b1a16cf4ef2d36",
-//     };
-//     if (tests[i]) {
-//         if(m.toString("hex")!=tests[i])
-//             console.log('dick');
-//     }}
-
-// console.log(sut.toString('hex'));
-// const ls = Buffer.from("2121212121212121212121212121212121212121212121212121212121212121", "hex"); // prettier-ignore
-// const es = Buffer.from("2222222222222222222222222222222222222222222222222222222222222222", "hex"); // prettier-ignore
-// let vals={ls,es};
-// let sut=new NoiseState(vals);
-// sut.receiveAct1(Buffer.from(
-//     "00036360e856310ce5d294e8be33fc807077dc56ac80d95d9cd4ddbd21325eff73f70df6086551151f58b8afe6c195782c6a",
-//     "hex"))
-// sut.recieveAct2();
-// sut.receiveAct3(Buffer.from(
-//     "00b9e3a702e93e3a9948c2ed6e5fd7590a6e1c3a0344cfc9d5b57357049aa22355361aa02e55a8fc28fef5bd6d71ad0c38228dc68b1c466263b47fdf31e560e139ba",
-//     "hex"))
-// sut.sk=sut.rk;
-// sut.encryptMessage(Buffer.from("68656c6c6f", "hex"));
-// const input = Buffer.from("68656c6c6f", "hex");
-// for (let i = 1; i <= 1001; i++) {
-//     const m = sut.encryptMessage(input);
-//     const tests = {
-//         1: "72887022101f0b6753e0c7de21657d35a4cb2a1f5cde2650528bbc8f837d0f0d7ad833b1a256a1",
-//         500: "178cb9d7387190fa34db9c2d50027d21793c9bc2d40b1e14dcf30ebeeeb220f48364f7a4c68bf8",
-//         501: "1b186c57d44eb6de4c057c49940d79bb838a145cb528d6e8fd26dbe50a60ca2c104b56b60e45bd",
-//         1000: "4a2f3cc3b5e78ddb83dcb426d9863d9d9a723b0337c89dd0b005d89f8d3c05c52b76b29b740f09",
-//         1001: "2ecd8c8a5629d0d02ab457a0fdd0f7b90a192cd46be5ecb6ca570bfc5e268338b1a16cf4ef2d36",
-//     };
-//     if (tests[i]) {
-//         console.log(m.toString("hex")===tests[i]);
-//     }
-// }
+module.exports={
+    NoiseState
+}

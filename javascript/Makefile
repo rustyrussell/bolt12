@@ -11,3 +11,5 @@ gencode.js: $(TOPDIR)/specs/bolt12.csv $(TOPDIR)/specs/bolt4.csv $(TOPDIR)/specs
 
 check: gencode.js
 	node test_bolt12.js
+	node test_noise_spec.js
+	
