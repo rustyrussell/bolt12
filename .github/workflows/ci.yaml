@@ -37,6 +37,7 @@ jobs:
           npm install js-sha256
           npm install bip-schnorr
           npm install xmlhttprequest
+          npm install ws
       - name: Build and check
         run: |
           make -C javascript check
