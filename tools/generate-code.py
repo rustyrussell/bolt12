@@ -118,7 +118,7 @@ def generate_fromwire_field(field, allfields, lang):
                       '    value["{fname}"] = v;'
                       .format(fname=field.name,
                               ftype=field.fieldtype.elemtype.name,
-                              limit=limitstr), file=ofile)
+                              limit=sizestr), file=ofile)
             elif lang == 'py':
                 print('    v = []\n'
                       '    i = 0\n'
