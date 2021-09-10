@@ -26,9 +26,9 @@
 - [x] check() for invoices -- AS
 - [x] Implement recurrence class -- AS
 - [ ] Native fetchinvoice -- AS
-    - [ ] connect via ws to LN node. -- AS
+    - [x] connect via ws to LN node. -- AS
     - [x] Implement Noise XK protocol as per BOLT 8 -- AS
-    - [ ] send /receive init msgs  -- AS
+    - [x] send /receive init msgs  -- AS
     - [ ] create onionmessage (big subproject) -- AS
     - [ ] use it instead of bootstrap.bolt12.org API -- AS
 
