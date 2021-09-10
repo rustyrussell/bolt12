@@ -213,8 +213,8 @@ function branch_from_tlv(alltlv, tlv){
     greaterSHA256=l>lnonce?l:lnonce
     return taggedHash(Buffer.from('LnBranch'),smallerSHA256+greaterSHA256).toString('hex')
 }
-function check_sign(msgname, merkle_root, pubkey32, bip340sig){
-    let msg=taggedHash(Buffer.from('lightning'+msgname+'signature'),merkle_root).toString('hex');
+function check_sign(msgname, fieldname,merkle_root, pubkey32, bip340sig){
+    let msg=taggedHash(Buffer.from('lightning'+msgname+fieldname),merkle_root).toString('hex');
     try{
         schnorr.verify(
             Buffer.from(pubkey32,'hex'),
@@ -237,7 +237,111 @@ function merkle_calc(tlv){
     }
     return merkle_nodes[0]
 }
+// check_sign(prefix=='lno'?'offer':(prefix=='lni'?'invoice':(prefix=='lnr'?'invoice_request':'bad prefix!')),
 
+function check_offer(final){
+    if('signature' in final['contents']){
+        try{
+            check_sign(prefix='offer',
+                    fieldname='signature',
+                    final['offer_id'],
+                    final['contents']['node_id'],
+                    final['contents']['signature']);
+        }
+        catch(e){
+            throw Error('Bad Signature!');
+        }
+    }
+    else{
+        throw Error('Missing signature!');
+    }
+    if(!('description' in final['contents'])){
+        throw Error('missing description');
+    }
+    if(!('node_id' in final['contents'])){
+        throw Error('missing node_id');
+    }
+    if('recurrence' in final['contents']){
+        console.log('This is a recurring payment offer!');
+    }
+    if('absolute_expiry' in final['contents']){
+        sec_since_epoch= new Date()/1000;
+        if(final['contents']['absolute_expiry']<sec_since_epoch){
+            throw Error('Absolute_expiry has passed!');
+        }
+    }
+    return true;
+}
+
+function check_invoice(final){
+    if('signature' in final['contents']){
+        try{
+            check_sign(prefix='invoice',
+                    fieldname='signature',
+                    final['offer_id'],
+                    final['contents']['node_id'],
+                    final['contents']['signature']);
+        }
+        catch(e){
+            throw Error('Bad Signature!');
+        }
+    }
+    else{
+        throw Error('Missing signature!');
+    }
+    if(!'amount' in final['contents']
+    || !'description' in final['contents']
+    || !'created_at' in final['contents']
+    || !'payment_hash' in final['contents']
+    ){
+        throw Error('(amount, description, created_at, payment_hash) are mandatory fields!');
+    }
+    if('relative_expiry' in final['contents']){
+        sec_since_epoch= new Date()/1000;
+        if(sec_since_epoch > final['contents']['created_at']+final['contents']['relative_expiry']){
+            throw Error('invoice is expired!');
+        }
+    }
+    else{
+        sec_since_epoch= new Date()/1000;
+        //Is this 7200 random?
+        if(sec_since_epoch > final['contents']['created_at']+7200){
+            throw Error('invoice is expired!');
+        }
+    }
+    if('blinded_path' in final['contents']){
+        if(!'blinded_payinfo' in final['contents']){
+            throw Error('blinded_payinfo is missing!');
+        }
+    }
+    return true;
+}
+
+function check_invoice_request(final){
+    if(!'payer_key' in final['contents']
+       || !'offer_id' in final
+       || !'payer_signature' in final['contents']
+    ){
+        throw Error('(payer_key, offer_id, payer_signature) is mandatory');
+    }
+    if('payer_signature' in final['contents']){
+        try{
+            check_sign(prefix='invoice_request',
+                    fieldname='payer_signature',
+                    final['offer_id'],
+                    final['contents']['payer_key'],
+                    final['contents']['payer_signature']);
+        }
+        catch(e){
+            throw Error('Bad Signature!');
+        }
+    }
+    else{
+        throw Error('Missing  payer_signature!');
+    }
+    //FIXME: feature even bits
+    return true;
+}
 
 function decode(paymentReq){
     if (typeof paymentReq !== 'string') 
@@ -344,7 +448,6 @@ function decode(paymentReq){
         buffer = res[1];
         
         tagWords = buffer.slice(0, Number(''+tagLength));
-
         
         if (tagCode in TAGPARSER){
             tagName=TAGPARSER[tagCode][0];
@@ -369,27 +472,25 @@ function decode(paymentReq){
             tags.push(Buffer.concat([Buffer.from(tlvs.slice(0,2)),tlvs[2]]).toString('hex'));
     }
     final['offer_id']=merkle_calc(tags);
-    if(prefix=='lno' && !('description' in fin_content)){
-        throw Error('missing description')
-    }
-    if(prefix=='lno'&&!('node_id' in fin_content)){
-        throw Error('missing node_id')
-    }
-    final['valid']='true';
-    if('signature' in fin_content){
-        try{
-            check_sign(prefix=='lno'?'offer':(prefix=='lni'?'invoice':(prefix=='lnr'?'invoice_request':'bad prefix!')),
-                    final['offer_id'],
-                    fin_content['node_id'],
-                    fin_content['signature'])
-        }
-        catch(e){
-            throw Error('Bad Signature!');
-        }
-                    
-    }
     final['contents']=fin_content;
-    return final;
+    if(prefix=='lno'){
+        if(check_offer(final)){
+            final['valid']='true';
+            return final;
+        }
+    }
+    if(prefix=='lni'){
+        if(check_invoice(final)){
+            final['valid']='true';
+            return final;
+        }
+    }
+    if(prefix=='lnr'){
+        if(check_invoice_request(final)){
+            final['valid']='true';
+            return final;
+        }
+    }
 }
 
 function get_recurrence(address){
@@ -588,7 +689,7 @@ function fetch_invoice(invoice_req,node_id){
 //     "payer_info": ['f8','15','5f','66','88','b3','87','8e','bd','2d','8c','73','a9','1e','58','57']
 // }
 // ))
-console.log(decode('lno1pqp3apyqpg9zq36f2ez5z46ptys3gqq7yqmhlzgnvate6rxlc2pnhser58gp298w5sx53n8gd5c78xpz8cxtxdsq7pqytdwfm85qdvwjsafme8yhms92v0cujxtj7nfu7n0a4u6pwtnf6lgmfu9h8wxdj2yn88c6zeu2qjguvucpkxq7egsqjqcs9zf30zvdng'));
+// console.log(decode('lno1pqp3apyqpg9zq36f2ez5z46ptys3gqq7yqmhlzgnvate6rxlc2pnhser58gp298w5sx53n8gd5c78xpz8cxtxdsq7pqytdwfm85qdvwjsafme8yhms92v0cujxtj7nfu7n0a4u6pwtnf6lgmfu9h8wxdj2yn88c6zeu2qjguvucpkxq7egsqjqcs9zf30zvdng'));
 // fetch_invoice('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qhjv0t6tlweh63k6ktuvt7299ecu5z348ht736jnusl68mzlu5nzryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzqwjywt78gy9l4h5q9x4n4llqryh52pwq342my37fd64tnvnfv0xfjszx94hhmc80dlr7xhpm4thumycek5r0px9fwnh9kykawj79ddjq',
 //                 '4b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605')
 module.exports={

@@ -23,7 +23,7 @@
 - [x] Check signatures -- AS
 - [x] check() for offers -- AS
 - [x] check() for invoice_request -- AS
-- [ ] check() for invoices -- AS
+- [x] check() for invoices -- AS
 - [x] Implement recurrence class -- AS
 - [ ] Native fetchinvoice -- AS
     - [ ] connect via ws to LN node. -- AS
