@@ -14,10 +14,10 @@ let rpk=Buffer.from('024b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1c
 var global_buffer=Buffer.alloc(0);
 Socket.onopen=function(){
     Socket.send(noise.initiatorAct1(rpk));
-    console.log('InitiatorAct1!');
+    // console.log('InitiatorAct1!');
 }
 Socket.onmessage=function(evt) {
-    console.log('Received!');
+    // console.log('Received!');
     global_buffer= Buffer.concat([global_buffer, evt.data])
     if(global_buffer.length < 50){
         return;
@@ -25,23 +25,22 @@ Socket.onmessage=function(evt) {
     var act2_buf=global_buffer.slice(0,50);
     global_buffer=global_buffer.slice(50);
     noise.initiatorAct2(act2_buf);
-    console.log('InitiatorAct2!');
+    // console.log('InitiatorAct2!');
     var Act3 = noise.initiatorAct3();
     Socket.send(Act3);
-    console.log('InitiatorAct3!');
+    // console.log('InitiatorAct3!');
+    console.log('Connection_established!');
     Socket.onmessage=function (init) {
         global_buffer= Buffer.concat([global_buffer, init.data])
         console.log(noise.decryptLength(global_buffer.slice(0,18)));
         // console.log((global_buffer.slice(18)).toString('hex'));
         global_buffer=global_buffer.slice(18);
-        console.log(noise.decryptMessage(global_buffer).toString())
-
+        console.log(noise.decryptMessage(global_buffer).toString('hex'))
         Socket.send(noise.encryptMessage(Buffer.from('68656c6c6f','hex')));
         console.log('sent!');
         Socket.onmessage=function (init2) {
-            console.log()
             console.log(noise.decryptLength(init2.slice(0,18)));
-            console.log(noise.decryptMessage(init2.slice(18)).toString());
+            console.log(noise.decryptMessage(init2.slice(18)).toString('hex'));
         }
     }
 }
