@@ -49,7 +49,7 @@ class IntegerType{
         let buffer=this.val
         if(buffer.length<this.bytelen)
             throw Error("Not enough bytes!")
-        return [BigInt("0x"+buffer.slice(0,this.bytelen).toString('hex')),
+        return [parseInt(Number("0x"+buffer.slice(0,this.bytelen).toString('hex')),10),
 		buffer.slice(this.bytelen)];
     }
     write(){
@@ -93,7 +93,7 @@ class FundamentalHexType{
             throw Error("Not enough bytes!")
         }
         return [Buffer.from(buffer,'hex').toString('hex'),
-		buffer.slice(0,this.byteslen)]
+		buffer.slice(this.byteslen)]
     }
     write(){
         if(this.val.length!=2*this.byteslen){
@@ -173,7 +173,6 @@ function towire_chain_hash(value){
 function fromwire_chain_hash(buffer){
     return new FundamentalHexType(buffer,32).read();
 }
-
 function towire_channel_id(value){
     var tu=new FundamentalHexType(value,32).write();
     return tu;
