@@ -287,7 +287,6 @@ function fromwire_init(buffer)
     }
     return value;
 }
-// console.log(fromwire_init(Buffer.from('0000000108','hex')));
 function towire_error(value)
 {
     let _n = 0;
@@ -401,5 +400,6 @@ module.exports={
     tlv_init_tlvs,
     tlv_n1,
     tlv_n2,
-    fromwire_init
+    fromwire_init,
+    fromwire_error
 }

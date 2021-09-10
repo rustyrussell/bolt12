@@ -17,6 +17,17 @@ const {
 const ALPHABET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
 const isBech32={};
 const ALPHABET_MAP = {};
+const WebSocket= require('ws');
+const {
+    tlv_init_tlvs,
+    tlv_n1,
+    tlv_n2,
+    fromwire_init,
+    fromwire_error
+}=require('./gencode_bolt1.js');
+const secp256k1 = require('secp256k1');
+const { randomBytes } = require('crypto')
+const {NoiseState}=require('./noise.js');
 
 class Recurrence{
     constructor(recurrence, recurrence_paywindow=null, recurrence_limit=null, recurrence_base=null){
@@ -156,8 +167,105 @@ for (let z = 0; z < ALPHABET.length; z++) {
     ALPHABET_MAP[x] = z;
     isBech32[x]=true;
 }
+function connect(node_id, address, port='9735', local_secret_key, rune, method){
+    var link = 'ws://'+address+':'+port;
 
+    var Socket = new WebSocket(link);
+    
+    var ls=Buffer.from(local_secret_key,'hex');
+    
+    var es;
+    
+    do {
+    es = randomBytes(32)
+    } while (!secp256k1.privateKeyVerify(es))
+    
+    let vals = {ls,es};
+    
+    let noise = new NoiseState(vals);
+    
+    let rpk = Buffer.from(node_id,'hex');
+    
+    Socket.onopen=function(){
+        Socket.send(noise.initiatorAct1(rpk));
+        // console.log('InitiatorAct1!');
+    }
+    
+    Socket.onmessage=function(evt) {
+        if(evt.data.length < 50){
+            return;
+        }
+        noise.initiatorAct2(evt.data);
+        // console.log('InitiatorAct2!');
+        var Act3 = noise.initiatorAct3();
+        Socket.send(Act3);
+        // console.log('InitiatorAct3!');
+        console.log('Connection_established!');
+        Socket.onmessage=function (init) {
+            var len = noise.decryptLength(init.data.slice(0,18));
+            var inti = init.data.slice(18,18+len+16);
+            let init_msg = noise.decryptMessage(inti);
+            var pref = init_msg.slice(0,2).toString('hex');
+            init_msg = init_msg.slice(2);
+            if(pref = '0010'){
+                console.log(fromwire_init(init_msg));
+                Socket.send(noise.encryptMessage(Buffer.from('00100000000580082a6aa201206fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000','hex')));
+                console.log('sent init message with features "80082a6aa2"!');
+                Socket.onmessage=function (init2) {
+                    var len = noise.decryptLength(init2.data.slice(0,18));
+                    var msg = noise.decryptMessage(init2.data.slice(18,18+len+16)).toString('hex');
 
+                    var cmd={"method": method, "rune":rune, "params":[],"id":1}
+                    // console.log(Buffer.concat([Buffer.from('4c4f','hex'), Buffer.from([0,0,0,0,0,0,0,0]) ,Buffer.from(JSON.stringify(cmd))]).toString('hex'));
+                    Socket.send(noise.encryptMessage(Buffer.concat([Buffer.from('4c4f','hex'),Buffer.from([0,0,0,0,0,0,0,0]) ,Buffer.from(JSON.stringify(cmd))])));
+                    console.log('sent!');
+                    let result = "";
+                    Socket.onmessage=function (init3) {
+                        var len=noise.decryptLength(init3.data.slice(0,18));
+                        var decr = noise.decryptMessage(init3.data.slice(18,18+len+16));
+                        // console.log(decr.slice(0,2).toString('hex'));
+                        if(decr.slice(0,2).toString('hex')==='4c4f'){
+                            result += decr.slice(2).toString();
+                            console.log(result);
+                        }
+                        else if(decr.slice(0,2).toString('hex')==='594d'){
+                            result += decr.slice(2).toString();
+                            Socket.close(1000,'Delibrate Closing');
+                            console.log(result);
+                        }
+                    }
+                }
+            }
+            else if(pref = '0011'){
+                console.log(fromwire_error(init_msg));
+            }
+            
+        }
+    }
+
+    Socket.onclose=function () {
+        return ([
+        {
+            'rn':noise.rn,
+            'sn':noise.sn
+        },
+        {
+            'sk':noise.sk,
+            'rk':noise.rk
+        },
+        {
+            'ck':noise.ck
+        }
+        ])
+    }
+}
+// connect('024b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605',
+//                     '128.199.202.168',
+//                     '9735',
+//                     'ea8d3091934f2c86c216370f0206acaaa2ee12462387743c358ca5f0245bf561',
+//                     'zO-SpOC7Tt5XjqU23ep4WEr56YzJm_QW1_Pc6jPJrPI9MyZtZXRob2RebGlzdHxtZXRob2ReZ2V0fG1ldGhvZD1zdW1tYXJ5Jm1ldGhvZC9nZXRzaGFyZWRzZWNyZXQmbWV0aG9kL2xpc3RkYXRhc3RvcmU=',
+//                     'listoffers'
+//         );
 function hash(buffer) {
     return Buffer.from(sha256.create().update(buffer).array());
 }
@@ -251,9 +359,6 @@ function check_offer(final){
         catch(e){
             throw Error('Bad Signature!');
         }
-    }
-    else{
-        throw Error('Missing signature!');
     }
     if(!('description' in final['contents'])){
         throw Error('missing description');
@@ -595,13 +700,12 @@ function invoice_request(offer, secret_payer_key, val_dict){
         throw Error("can't sign this without secret key :)");
     }
     offer=decode(offer);
-    val_dict['offer_id']=offer['offer_id'];
-
+    val_dict['offer_id'] = offer['offer_id'];
     invoice_req_check(offer,val_dict);
-    let resDict={};
-    let tags=[];
+    let resDict = {};
+    let tags = [];
     resDict[tlv_invoice_request_rev['offer_id']] = tlv_invoice_request[tlv_invoice_request_rev['offer_id']][1](offer['offer_id']);
-    let keys=[];
+    let keys = [];
     for(key in val_dict){
         if(!(key in tlv_invoice_request_rev)){
             throw Error(key + ' is not defined in spec!');
@@ -612,7 +716,7 @@ function invoice_request(offer, secret_payer_key, val_dict){
         }
     }
     let words=[];
-    keys=keys.sort(function(a, b){return a - b});
+    keys = keys.sort(function(a, b){return a - b});
     let whole_buf=Buffer.alloc(0);
     for (let i=0;i<keys.length;i++){
         buf = Buffer.alloc(0);
@@ -626,12 +730,12 @@ function invoice_request(offer, secret_payer_key, val_dict){
             buf=buf.slice(1);
         }
     }
-    let merkle_root=merkle_calc(tags);
-    let msg =taggedHash(Buffer.from('lightninginvoice_requestpayer_signature'),merkle_root);
-    let payer_sig=schnorr.sign(secret_payer_key,msg);
-    buf=concat([buf, towire_bigsize(240)]);
-    buf=concat([buf, towire_bigsize(payer_sig.length)]);
-    buf=concat([buf, payer_sig]);
+    let merkle_root = merkle_calc(tags);
+    let msg = taggedHash(Buffer.from('lightninginvoice_requestpayer_signature'), merkle_root);
+    let payer_sig = schnorr.sign(secret_payer_key, msg);
+    buf = concat([buf, towire_bigsize(240)]);
+    buf = concat([buf, towire_bigsize(payer_sig.length)]);
+    buf = concat([buf, payer_sig]);
     whole_buf=concat([whole_buf,buf])
     while(buf.length){
         words.push(parseInt(buf.slice(0,1).toString('hex'),16));
@@ -644,6 +748,21 @@ function invoice_request(offer, secret_payer_key, val_dict){
     }
     return res_string;
 }
+
+// console.log(invoice_request('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg',
+//     "ea8d3091934f2c86c216370f0206acaaa2ee12462387743c358ca5f0245bf561",
+//     {
+//         "features": ['80','00','02','42','00'],
+//         "recurrence_counter": 0,
+//         "recurrence_start": 23,
+//         "payer_key": "5f200a02d68bdc3958dab425515054cc08ad51e3d26bc754ee985badaf9f4d9c",
+//         "payer_info": ['f8','15','5f','66','88','b3','87','8e','bd','2d','8c','73','a9','1e','58','57']
+//     }
+//     )
+// )
+// //
+// console.log(decode('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg'));
+
 function fetch_invoice(invoice_req, node_id){
     let request= new XMLHttpRequest();
     let link='https://bootstrap.bolt12.org/rawinvreq/'
@@ -675,24 +794,13 @@ function fetch_invoice(invoice_req, node_id){
             console.log(`error ${request.status} \n ${request.responseText}`);
     }
 }
-
-// console.log(invoice_request('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg',
-// "bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4",
-// {
-//     "features": ['80','00','02','42','00'],
-//     "recurrence_counter": 0,
-//     "recurrence_start": 23,
-//     "payer_key": "bc98f5e97f766fa8db565f18bf28a5ce394146a7bafd1d4a7c87f47d8bfca4c4",
-//     "payer_info": ['f8','15','5f','66','88','b3','87','8e','bd','2d','8c','73','a9','1e','58','57']
-// }
-// ))
-// console.log(decode('lno1pqp3apyqpg9zq36f2ez5z46ptys3gqq7yqmhlzgnvate6rxlc2pnhser58gp298w5sx53n8gd5c78xpz8cxtxdsq7pqytdwfm85qdvwjsafme8yhms92v0cujxtj7nfu7n0a4u6pwtnf6lgmfu9h8wxdj2yn88c6zeu2qjguvucpkxq7egsqjqcs9zf30zvdng'));
-// fetch_invoice('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qhjv0t6tlweh63k6ktuvt7299ecu5z348ht736jnusl68mzlu5nzryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzqwjywt78gy9l4h5q9x4n4llqryh52pwq342my37fd64tnvnfv0xfjszx94hhmc80dlr7xhpm4thumycek5r0px9fwnh9kykawj79ddjq',
-//                 '4b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605')
+// fetch_invoice('lnr1qsswvmtmawf77xcssjnnuh0xja0tcawzp5dpw77jlvpzkygzy6a0w9svqkqqqqjzqqjqqf3qtusq5qkk30wrjkx6ksj4z5z5esy2650r6f4uw48wnpd6mtulfkwryy8cz40kdz9ns78t6tvvww53ukzhgsq30uzq29u3m8slwfstkw6qf83s3qkyshlfxntc2qlvquhapq0f5x0lwcthg9dnrkzlpjxczgxfxdfyhelsc8s9hjdqtdgtt93a2hzlrp205hq',
+// '4b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605')
 module.exports={
     decode,
     get_recurrence,
     fetch_invoice,
     invoice_request,
-    invoice_req_check
+    invoice_req_check,
+    connect
 }
