@@ -1,5 +1,5 @@
 # BOLT12
-A library for decoding and verifying BOLT 12 offers, invoice_requests and invoices.
+A library for decoding and verifying BOLT 12 offers, invoice_requests and invoices and talking to the lightning node through websocket.
 
 # Installation
 ```npm install bolt12 ```
@@ -39,7 +39,7 @@ Make sure you enter the 'key' same as mentioned in the spec file(or https://bolt
 
 # Example
 ```
-var inv_req=file.invoice_request(lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg',
+var inv_req=file.invoice_request('lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9uhxtpqveex7mfqxyk55ctw95erqv339ss8qun094exzarpzsg8yatnw3ujumm6d3skyuewdaexwxszqy9pcpgptlhxvqq7yp9e58aguqr0rcun0ajlvmzq3ek63cw2w282gv3z5uupmuwvgjtq2sqgqqxj7qqpp5hspuzq0pgmhkcg6tqeclvexaawhylurq90ezqrdcm7gapzvcyfzexkt8nmu628dxr375yjvax3x20cxyty8fg8wrr2dlq3nx45phn2kqru2cg',
     "ea8d3091934f2c86c216370f0206acaaa2ee12462387743c358ca5f0245bf561",
     {
         "features": ['80','00','02','42','00'],
@@ -74,4 +74,34 @@ var inv_req=file.invoice_request(lno1pqpq86q2xycnqvpsd4ekzapqv4mx2uneyqcnqgryv9u
   valid: 'true'
 }
 ```
+If you run a C-lightning node with installed commando plugin you can connect and run commands on your nodes through websocket.
+# Example
+```
+connect(node_id = '024b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605',
+        address = '128.199.202.168',
+        port = '9735',
+        local_secret_key = 'ea8d3091934f2c86c216370f0206acaaa2ee12462387743c358ca5f0245bf561',
+        rune = '2bFJq-BfakFzYc7aCvuXU_Had2PjZ_PRwh-ZDp837bw9MiZtZXRob2Q9Z2V0aW5mbw==',
+        method = 'getinfo'
+        ); 
+```
+# Output
+
+```
+Connection_established!
+{
+  globalfeatures: <Buffer 22 00>,
+  features: <Buffer 80 08 2a 6a a2>,
+  tlvs: {
+    type: 1,
+    len: 32,
+    val: '000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f'
+  }
+}
+sent init message with features "80082a6aa2"!
+sent!
+{"result": {"id": "024b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605", "alias": "BLUEIRON-10.1-42-g6422261-modded", "color": "024b9a", "num_peers": 43, "num_pending_channels": 0, "num_active_channels": 38, "num_inactive_channels": 1, "address": [{"type": "ipv4", "address": "128.199.202.168", "port": 9735}, {"type": "ipv6", 
+"address": "2400:6180:0:d0::5cd2:a001", "port": 9735}, {"type": "torv3", "address": "ki5uack5xb4gicfnpfavzdibojfu3qvwtlg3ca7eyjxik7tgwfxummqd.onion", "port": 9735}, {"type": "torv3", "address": "kw6brkklnmktpp7ysiunxkdv6nuwhzauj3cefhhnbx2fyfe7aqud3wid.onion", "port": 9735}], "binding": [{"type": "ipv6", "address": "::", "port": 9735}, {"type": "ipv4", "address": "0.0.0.0", "port": 9735}], "version": "v0.10.1-42-g6422261-modded", "blockheight": 699469, "network": "bitcoin", "msatoshi_fees_collected": 9060527, "fees_collected_msat": "9060527msat", "lightning-dir": "/home/rusty/.lightning/bitcoin"}}
+```
+
  You can reach us on our Telegram channel @https://t.me/bolt12org

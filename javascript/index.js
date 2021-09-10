@@ -259,12 +259,12 @@ function connect(node_id, address, port='9735', local_secret_key, rune, method){
         ])
     }
 }
-// connect('024b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605',
-//                     '128.199.202.168',
-//                     '9735',
-//                     'ea8d3091934f2c86c216370f0206acaaa2ee12462387743c358ca5f0245bf561',
-//                     'zO-SpOC7Tt5XjqU23ep4WEr56YzJm_QW1_Pc6jPJrPI9MyZtZXRob2RebGlzdHxtZXRob2ReZ2V0fG1ldGhvZD1zdW1tYXJ5Jm1ldGhvZC9nZXRzaGFyZWRzZWNyZXQmbWV0aG9kL2xpc3RkYXRhc3RvcmU=',
-//                     'listoffers'
+// connect(node_id = '024b9a1fa8e006f1e3937f65f66c408e6da8e1ca728ea43222a7381df1cc449605',
+//         address = '128.199.202.168',
+//         port = '9735',
+//         local_secret_key = 'ea8d3091934f2c86c216370f0206acaaa2ee12462387743c358ca5f0245bf561',
+//         rune = '2bFJq-BfakFzYc7aCvuXU_Had2PjZ_PRwh-ZDp837bw9MiZtZXRob2Q9Z2V0aW5mbw==',
+//         method = 'getinfo'
 //         );
 function hash(buffer) {
     return Buffer.from(sha256.create().update(buffer).array());
