@@ -261,9 +261,6 @@ function check_offer(final){
     if(!('node_id' in final['contents'])){
         throw Error('missing node_id');
     }
-    if('recurrence' in final['contents']){
-        console.log('This is a recurring payment offer!');
-    }
     if('absolute_expiry' in final['contents']){
         sec_since_epoch= new Date()/1000;
         if(final['contents']['absolute_expiry']<sec_since_epoch){
@@ -593,8 +590,8 @@ function invoice_req_check(offer, val_dict){
     }
 }
 
-function invoice_request(offer, secret_payer_key=null, val_dict){
-    if(secret_payer_key==null){
+function invoice_request(offer, secret_payer_key, val_dict){
+    if(!secret_payer_key){
         throw Error("can't sign this without secret key :)");
     }
     offer=decode(offer);
@@ -647,7 +644,7 @@ function invoice_request(offer, secret_payer_key=null, val_dict){
     }
     return res_string;
 }
-function fetch_invoice(invoice_req,node_id){
+function fetch_invoice(invoice_req, node_id){
     let request= new XMLHttpRequest();
     let link='https://bootstrap.bolt12.org/rawinvreq/'
                 +invoice_req+'/02'+node_id;
