@@ -769,7 +769,7 @@ function fetch_invoice(invoice_req, node_id){
                 +invoice_req+'/02'+node_id;
     request.open('GET',link);
     request.send();
-    request.resposeType='json'
+    request.responseType='json'
     request.onload=()=>{
         if(request.status==200){
             console.log(JSON.parse(request.responseText));
@@ -780,7 +780,7 @@ function fetch_invoice(invoice_req, node_id){
                 +invoice_req+'/03'+node_id;
             request2.open('GET',link);
             request2.send();
-            request2.resposeType='json'
+            request2.responseType='json'
             request2.onload=()=>{
                 if(request2.status==200){
                     console.log(JSON.parse(request2.responseText));
