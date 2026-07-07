@@ -119,7 +119,9 @@ export function extractOfferFields(records: TlvRecord[]): OfferFields {
         fields.amount = tu64(rec.value);
         break;
       case 10n:
-        fields.description = utf8.decode(rec.value);
+        if (rec.value.length > 0) {
+          fields.description = utf8.decode(rec.value);
+        }
         break;
       case 12n:
         fields.features = toHex(rec.value);

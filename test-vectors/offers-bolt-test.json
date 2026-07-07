@@ -569,6 +569,12 @@
     "bolt12": "lno1pgx9getnwss8vetrw3hhyucvzqzqqqqqqqqqqqqqqqqqqqqqqqqpvggzamrjghtt05kvkvpcp0a79gmy3nt6jsn98ad2xs8de6sl9qmgvcvs"
   },
   {
+    "description": "Invalid: empty offer_description with offer_amount",
+    "valid": false,
+    "bolt12": "lno1pqpsrp4qpgqppyszm9h2m63a0qqsg3y6efwfx3suue7p2e8zu8tnyf06vlwnhxt6vqvqyf8jvyecffjtz05vya0vgp5sfn55wl8vqarecz79u8qhnpur9ftcqypmkuuze5jrk2q22zrnxyz2ynlc8j86a7ezgt6srmkzxl7g9wd9wsgq9j5aez833nmx9r64vsk09265rtvvgcn999vxf9qkqx6gkjd0fg75jn3gz2ltaavaqfdrln9kzcssxlqqpp58n5s0kht2wwe8sxjw7f3uwd5hm2ufphml7ygc2af9jk09",
+    "field info": "amount 100000msat, description TLV length 0"
+  },
+  {
     "description": "Missing offer_description, but has offer_amount",
     "valid": false,
     "bolt12": "lno1pqpzwyqkyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg"

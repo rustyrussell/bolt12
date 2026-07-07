@@ -283,6 +283,11 @@ export function validateOffer(records: TlvRecord[]): ValidatedOffer {
       }
 
       case OFFER_DESCRIPTION:
+        if (record.value.length === 0) {
+          // BOLT12: offer_description is optional only when offer_amount is absent.
+          // An empty TLV is not "descriptionless" — omit type 10 entirely.
+          throw new Error('Invalid: empty offer_description');
+        }
         validateUtf8(record.value, 'offer_description');
         hasDescription = true;
         break;
